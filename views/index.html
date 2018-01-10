@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>{{title}}</title>
+        <link rel="stylesheet" href="/css/style.css">
+    </head>
+    <body>
+        <div class="console">
+            <pre id="code"></pre>
+            <a href="#top" class="to-top" style="bottom: 2px;"></a>
+            <a href="#bottom" class="to-bottom" style="bottom: 2px;"></a>
+        </div>
+        <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+            var socket = io.connect(
+                    '{{ server }}', {
+                        query: "{{#each args}}{{@key}}={{this}}&{{/each}}cmd={{cmd}}",
+                        reconnection: false 
+                    }
+                )
+        </script>
+        <script src="/js/client.js"></script>
+        <script src="/js/to-bottom.js"></script>
+        <script src="/js/to-top.js"></script>
+        </script>
+    </body>
+</html>

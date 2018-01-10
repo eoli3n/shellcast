@@ -1,0 +1,100 @@
+.console {
+  width:740px;
+  margin:-45px auto;
+}
+
+#code {
+  font-family: monospace;
+  color: #F1F1F1;
+  background-color: #222222;
+  width: em(440);
+  margin: 4em auto;
+  padding: 0.5em;
+  border-radius: .25em;
+  white-space: pre-wrap;
+  white-space: -moz-pre-wrap;
+  white-space: -pre-wrap;
+  white-space: -o-pre-wrap;
+  word-wrap: break-word;     
+  counter-reset: line;
+  overflow-y: auto;
+  max-height: 900px;
+}
+
+.log-line {
+  position: relative;
+  padding: 0 15px 0 62px;
+  margin: 0;
+  min-height: 19px;
+}
+  
+.log-line:hover {
+  background-color: #444;
+}
+
+.log-line a {
+  display: inline-block;
+  text-align: right;
+  min-width: 40px;
+  margin-left: -40px;
+  color: #888;
+  position: absolute;
+}
+
+.log-line a:before {
+  content: counter(line);
+  counter-increment: line;
+  padding-right: 1em;
+}
+
+.green {
+  color: #26AF5F
+}
+
+.orange {
+  color: #F49D1D
+}
+
+.red {
+  color: #C13A2C
+}
+
+.blue {
+  color: #3597D3
+}
+
+.to-top {
+  margin-right: 2px;
+  padding-right: 50px; 
+  color: #000;
+  text-decoration: none;
+  background: url('../png/totop.png') no-repeat;
+  position: fixed;
+  top: 90%;
+  right: 40px;
+  display: none;
+}
+
+.to-bottom {
+  margin-right: 2px;
+  padding-right: 50px; 
+  color: #000;
+  text-decoration: none;
+  background: url('../png/tobottom.png') no-repeat;
+  position: fixed;
+  top: 90%;
+  right: 100px;
+  display: none;
+}
+
+.to-top:hover{
+  text-decoration:none;
+  background: url('../png/totop-hover.png') no-repeat;
+  display: none;
+}
+
+.to-bottom:hover{
+  text-decoration:none;
+  background: url('../png/tobottom-hover.png') no-repeat;
+  display: none;
+}

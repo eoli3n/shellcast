@@ -1,0 +1,31 @@
+- name: test
+  cmd: ./test.sh {}
+  args:
+    - target
+
+- name: test-dev
+  cmd: ./test2.sh {} {} {}
+  args:
+    - param1
+    - param2
+    - param3
+
+- name: ansible-pull
+  cmd: ssh root@{} /root/ansible-pull.sh
+  args:
+    - target
+  hilight:
+    - word: 'ok:'
+      color: green
+    - word: 'changed:'
+      color: orange
+
+- name: ansible-push
+  cmd: ansible-playbook {} -l $target
+  args:
+    - target
+  hilight:
+    - string: 'ok:'
+      color: green
+    - string: 'changed:'
+      color: orange
