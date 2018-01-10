@@ -1,7 +1,17 @@
 - name: test
-  cmd: ./test.sh {}
+  cmd: ./test.sh {} {}
   args:
     - target
+    - options
+  hilight:
+    - word: 'skipping:'
+      color: red
+    - word: 'ok:'
+      color: red
+    - word: 'd2'
+      color: red
+    - word: 'fatal:'
+      color: orange
 
 - name: test-dev
   cmd: ./test2.sh {} {} {}

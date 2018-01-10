@@ -38,34 +38,6 @@ var config = ini.parse(fs.readFileSync('./config.ini', 'utf-8'))
 
 // read yaml file
 var casts = yaml.safeLoad(fs.readFileSync('casts.yml', 'utf8'));
-//debug
-console.log(casts)
-console.log('--------------------------')
-casts.forEach(function (cast){
-    console.log('Name:')
-    console.log(cast.name)
-    console.log('CMD :')
-    console.log(cast.cmd)
-    console.log('Hilight :')
-    if (cast.hilight){
-        cast.hilight.forEach(function (hl){
-            if (hl.string) {
-                console.log('string:')
-                console.log(hl.string)
-                console.log('color:')
-                console.log(hl.color)
-            } else if (hl.word){
-                console.log('word:')
-                console.log(hl.word)
-                console.log('color:')
-                console.log(hl.color)
-            }
-        })
-    }
-    console.log('----------------------------')
-})
-
-// template css file
 
 // when query /host
 casts.forEach(function (cast){
@@ -85,16 +57,31 @@ casts.forEach(function (cast){
             cmd: cast.name
         }
 
-        //send dynamic params
-        values['args'] = {}
-        cast.args.forEach(function (arg){
-            //test missing args
-            if (req.query[arg]){
-                values['args'][arg] = req.query[arg]
-            }else{
-                res.status(404).send('<span>Missing argument(s)...</span>')
-            }
-        })
+        //template dynamic args
+        if (cast.args) {
+            values['args'] = {}
+            cast.args.forEach(function (arg){
+                //test missing args
+                if (req.query[arg]){
+                    values['args'][arg] = req.query[arg]
+                }else{
+                    res.status(404).send('<span>Missing argument ' + arg + '</span>')
+                }
+            })
+        }
+
+        //template dynamic hilight
+        if (cast.hilight) {
+            values['hilight-line'] = {}
+            values['hilight-word'] = {}
+            cast.hilight.forEach(function (hl){
+                if (hl.line) {
+                    values['hilight-line'][hl.line] = hl.color
+                } else if (hl.word){
+                    values['hilight-word'][hl.word] = hl.color
+                }
+            })
+        }
 
         //debug
         console.log(values)
@@ -112,7 +99,7 @@ io.sockets.on('connection', function (socket) {
     cmd_args = ""
     casts.forEach(function (cast){
         if (cast.name == socket.handshake.query['cmd']){
-            // get string cmd and replace {} with %s
+            // get string cmd
             cmd_string = cast.cmd
             // get dynamic args
             cast.args.forEach(function (arg){

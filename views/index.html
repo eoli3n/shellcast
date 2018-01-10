@@ -14,14 +14,39 @@
         <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
         <script src="/socket.io/socket.io.js"></script>
         <script>
-            var socket = io.connect(
-                    '{{ server }}', {
+            var socket = io.connect('{{ server }}', {
                         query: "{{#each args}}{{@key}}={{this}}&{{/each}}cmd={{cmd}}",
                         reconnection: false 
                     }
                 )
+            socket.on('line', (data) => {
+                var preline = $.map(data.split(' '), function(word) {
+                    //word hilight
+                    //TODO https://jsfiddle.net/uyq7mrot/1/
+                    var a = $('<span>', { text: word + ' ' })
+                    {{#if hilight-word}}
+                    {{#each hilight-word}}
+                    a.toggleClass('{{this}}', word.match(/{{@key}}/) != null)
+                    {{/each}}
+                    {{/if}}
+                    return a;
+                });
+                var line = $('<div>', { class: 'log-line' }).append('<a>').append(preline);
+            
+                //line hilight
+                {{#if hilight-line}}
+                {{#each hilight-line}}
+                line.toggleClass('{{this}}', data.match(/{{@key}}/) != null);
+                {{/each}}
+                {{/if}}
+            
+                $('#code').append(line);
+            
+                //Then scroll to that line
+                // see http://jsfiddle.net/7Lquu899/4/ for complete page scroll
+                $('#code').animate({scrollTop: $('#code').prop("scrollHeight")}, 10);
+            });
         </script>
-        <script src="/js/client.js"></script>
         <script src="/js/to-bottom.js"></script>
         <script src="/js/to-top.js"></script>
         </script>
