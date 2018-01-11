@@ -1,9 +1,10 @@
-- name: test
+- name: TROLOLOL
+  url: /test/
   cmd: ./test.sh {} {}
   args:
     - target
     - options
-  hilight:
+  highlight:
     - word: 'skipping:'
       color: red
     - word: 'ok:'
@@ -13,28 +14,31 @@
     - word: 'fatal:'
       color: orange
 
-- name: test-dev
+- name: TURLUTUTU
+  url: /test-dev
   cmd: ./test2.sh {} {} {}
   args:
     - param1
     - param2
     - param3
 
-- name: ansible-pull
+- name: testansible
+  url: /ansible-pull
   cmd: ssh root@{} /root/ansible-pull.sh
   args:
     - target
-  hilight:
+  highlight:
     - word: 'ok:'
       color: green
     - word: 'changed:'
       color: orange
 
-- name: ansible-push
+- name: testansiblepusljh
+  url: /ansible-push
   cmd: ansible-playbook {} -l $target
   args:
     - target
-  hilight:
+  highlight:
     - string: 'ok:'
       color: green
     - string: 'changed:'

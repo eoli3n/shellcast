@@ -41,7 +41,8 @@ var casts = yaml.safeLoad(fs.readFileSync('casts.yml', 'utf8'));
 
 // when query /host
 casts.forEach(function (cast){
-    app.get('/' + cast.name + '/', function(req, res) {
+    //remove last '/' fix
+    app.get( cast.url.replace(/\/$/, '') , function(req, res) {
     
         // if secure=yes test password param
         if (config.default.secure === "yes") {
@@ -52,39 +53,21 @@ casts.forEach(function (cast){
     
         //init render args
         var values = { 
-            title: 'Cast ' + cast.name,
-            server: config.default.server,
-            cmd: cast.name
+            title: cast.name
         }
 
-        //template dynamic args
-        if (cast.args) {
-            values['args'] = {}
-            cast.args.forEach(function (arg){
-                //test missing args
-                if (req.query[arg]){
-                    values['args'][arg] = req.query[arg]
-                }else{
-                    res.status(404).send('<span>Missing argument ' + arg + '</span>')
-                }
-            })
-        }
-
-        //template dynamic hilight
-        if (cast.hilight) {
-            values['hilight-line'] = {}
-            values['hilight-word'] = {}
-            cast.hilight.forEach(function (hl){
-                if (hl.line) {
-                    values['hilight-line'][hl.line] = hl.color
-                } else if (hl.word){
-                    values['hilight-word'][hl.word] = hl.color
-                }
-            })
-        }
-
-        //debug
-        console.log(values)
+        //template dynamic highlight
+        //if (cast.highlight) {
+        //    values['highlight-line'] = {}
+        //    values['highlight-word'] = {}
+        //    cast.highlight.forEach(function (hl){
+        //        if (hl.line) {
+        //            values['highlight-line'][hl.line] = hl.color
+        //        } else if (hl.word){
+        //            values['highlight-word'][hl.word] = hl.color
+        //        }
+        //    })
+        //}
 
         // render html
         res.render('index', values)
@@ -93,58 +76,69 @@ casts.forEach(function (cast){
 
 io.sockets.on('connection', function (socket) {
     console.log('Socket connected.')
-    console.log( 'Cast : ' + socket.handshake.query['cmd'] )
+    console.log(socket.handshake.query)
 
-    //search cmd in yml
-    cmd_args = ""
-    casts.forEach(function (cast){
-        if (cast.name == socket.handshake.query['cmd']){
-            // get string cmd
-            cmd_string = cast.cmd
-            // get dynamic args
-            cast.args.forEach(function (arg){
-                cmd_args = cmd_args.concat(socket.handshake.query[arg] + ' ')
-            })
-        }
-    })
+    socket.on('run', function (url) {
+        console.log('url: ' + url)
 
-    //replace args
-    cmd_args.split(' ').forEach( function (arg){
-        cmd_string = cmd_string.replace('{}', arg)
-    })
+        //match yml and client url
+        casts.forEach(function (cast){
+            //remove last '/' fix
+            if (cast.url.replace(/\/$/, '') == url.replace(/\/$/, '')){
+                // get string cmd
+                cmd_string = cast.cmd
+                // get args
+                cast_args = []
+                cast.args.forEach(function (arg){
+                    cast_args.push(socket.handshake.query[arg])
+                })
+                // get highlight to json
+                cast_highlight_json = JSON.stringify(cast.highlight)
+                console.log(cast_highlight_json)
+            }
+        })
+    
+        //send json highlight -> client
+        socket.emit('highlight', cast_highlight_json)
 
-    //format to spawn dict
-    var cmd = cmd_string.split(' ')
-    var cmd_first = cmd[0]
-    cmd.shift()
-
-    //run
-    run = spawn(cmd_first, cmd)
-
-    //on new data
-    //stdout
-    run.stdout.pipe(split()).on('data', (data) => {
-        line = `${data}`
-        //console.log(line)
-        socket.emit('line', line)
-    })
-
-    //stderr
-    run.stderr.pipe(split()).on('data', (data) => {
-        line = `${data}`
-        //console.log(line)
-        socket.emit('line', line)
-    })
-
-    //on close
-    run.on('close', function (code) {
-        console.log( 'Cast ' + socket.handshake.query['cmd'] + ' exited with code ' + code)
-    })
-
-    //on disconnect
-    socket.on('disconnect', function() {
-        //console.log( socket.handshake.query['target'] + ' : socket disconnected.')
-        run.kill('SIGHUP')
+        //replace args
+        cast_args.forEach( function (arg){
+            cmd_string = cmd_string.replace('{}', arg)
+        })
+    
+        //format to spawn dict
+        var cmd = cmd_string.split(' ')
+        var cmd_first = cmd[0]
+        cmd.shift()
+    
+        //run
+        run = spawn(cmd_first, cmd)
+    
+        //on new data
+        //stdout
+        run.stdout.pipe(split()).on('data', (data) => {
+            line = `${data}`
+            //console.log(line)
+            socket.emit('line', line)
+        })
+    
+        //stderr
+        run.stderr.pipe(split()).on('data', (data) => {
+            line = `${data}`
+            //console.log(line)
+            socket.emit('line', line)
+        })
+    
+        //on close
+        run.on('close', function (code) {
+            console.log( 'Cast ' + socket.handshake.query['cmd'] + ' exited with code ' + code)
+        })
+    
+        //on disconnect
+        socket.on('disconnect', function() {
+            //console.log( socket.handshake.query['target'] + ' : socket disconnected.')
+            run.kill('SIGHUP')
+        })
     })
 })
 
