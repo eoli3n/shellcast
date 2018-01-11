@@ -6,7 +6,12 @@ socket.emit('init', window.location.pathname );
 
 //get cast highlight
 socket.on('highlight', (data) => {
-    json_highlight = data
+    //catch empty highlight
+    if (data){
+        json_highlight = data
+    } else {
+        json_highlight = []
+    }
     socket.emit('run')
 });
 
@@ -17,10 +22,12 @@ socket.on('line', (data) => {
     var preline = $.map(data.split(' '), function(word) {
         var a = $('<span>', { text: word + ' ' })
         json_highlight.forEach(function (hl){
+            //debug
+            //socket.emit('log', hl)
             if (hl['word']){
-               a.toggleClass(hl['color'], word.match('/' + hl['word'] + '/') != null )
-               //debug
-               socket.emit('log', a.prop('outerHTML'))
+                if (word.match(RegExp(hl['word'])) != null) { a.addClass(hl['class']); }
+                //debug
+                //socket.emit('log', a.prop('outerHTML'))
             }
         })
         return a;
@@ -32,8 +39,11 @@ socket.on('line', (data) => {
     //line highlight
     json_highlight.forEach(function (hl){
         if (hl['line']){
-            line.toggleClass(hl['color'], data.match('/' + hl['word'] + '/') != null);
+            if (data.match(RegExp(hl['line'])) != null) { line.addClass(hl['class']); }
+            //debug
+            socket.emit('log', line.prop('outerHTML'))
         }
+    })
     
     //add line to console
     $('#code').append(line);
@@ -42,5 +52,4 @@ socket.on('line', (data) => {
     // see http://jsfiddle.net/7Lquu899/4/ for complete page scroll
     $('#code').animate({scrollTop: $('#code').prop("scrollHeight")}, 10);
 
-    })
 });

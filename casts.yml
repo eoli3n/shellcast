@@ -1,45 +1,40 @@
-- name: TROLOLOL
-  url: /test/
-  cmd: ./test.sh {} {}
-  args:
-    - target
-    - options
+# Test url : http://localhost:8080/rainbow
+- name: Rainbow
+  description: "Test word highlights and stream"
+  url: /rainbow
+  cmd: ./tests/rainbow.sh
   highlight:
-    - word: 'skipping:'
-      color: red
-    - word: 'ok:'
-      color: red
-    - word: 'd2'
-      color: red
-    - word: 'fatal:'
-      color: orange
+    # 'word' support regexp
+    # 'class' could be any class define in public/css/custom.css
+    - word: 'white'
+      class: white
+    - word: 'hide'
+      class: hide
+    - word: 'gray'
+      class: gray
+    - word: 'red'
+      class: red
+    - word: 'orange'
+      class: orange
+    - word: 'yellow'
+      class: yellow
+    - word: 'purple'
+      class: purple
+    - word: 'blue'
+      class: blue
+    - word: 'green'
+      class: green
+    - line: '0.1'
+      class: yellow
 
-- name: TURLUTUTU
-  url: /test-dev
-  cmd: ./test2.sh {} {} {}
+# Test url : http://localhost:8080/args/test?hostname=foo&ip=192.168.0.1&mac=00:11:22:33:44:55
+- name: Args
+  description: "Test args and suburls"
+  url: /args/test
+  # Get /args/test?hostname=foo&ip=192.168.0.1&mac=00:11:22:33:44:55
+  # will be run as "./tests/args.sh foo 192.168.0.1 00:11:22:33:44:55"
+  cmd: ./tests/args.sh {} {} {}
   args:
-    - param1
-    - param2
-    - param3
-
-- name: testansible
-  url: /ansible-pull
-  cmd: ssh root@{} /root/ansible-pull.sh
-  args:
-    - target
-  highlight:
-    - word: 'ok:'
-      color: green
-    - word: 'changed:'
-      color: orange
-
-- name: testansiblepusljh
-  url: /ansible-push
-  cmd: ansible-playbook {} -l $target
-  args:
-    - target
-  highlight:
-    - string: 'ok:'
-      color: green
-    - string: 'changed:'
-      color: orange
+    - hostname
+    - ip
+    - mac

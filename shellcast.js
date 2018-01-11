@@ -56,19 +56,6 @@ casts.forEach(function (cast){
             title: cast.name
         }
 
-        //template dynamic highlight
-        //if (cast.highlight) {
-        //    values['highlight-line'] = {}
-        //    values['highlight-word'] = {}
-        //    cast.highlight.forEach(function (hl){
-        //        if (hl.line) {
-        //            values['highlight-line'][hl.line] = hl.color
-        //        } else if (hl.word){
-        //            values['highlight-word'][hl.word] = hl.color
-        //        }
-        //    })
-        //}
-
         // render html
         res.render('index', values)
     })
@@ -76,15 +63,15 @@ casts.forEach(function (cast){
 
 io.sockets.on('connection', function (socket) {
     console.log('Socket connected.')
-    console.log(socket.handshake.query)
+    //console.log(socket.handshake.query)
 
     //debug
-    socket.on('log', function(data){
-        console.log(data)
-    })
+    //socket.on('log', function(data){
+    //    console.log(data)
+    //})
 
     socket.on('init', function (url) {
-        console.log('url: ' + url)
+        //console.log('url: ' + url)
 
         //match yml and client url
         casts.forEach(function (cast){
@@ -94,30 +81,38 @@ io.sockets.on('connection', function (socket) {
                 cmd_string = cast.cmd
                 // get args
                 cast_args = []
-                cast.args.forEach(function (arg){
-                    cast_args.push(socket.handshake.query[arg])
-                })
+                if (cast.args){
+                    cast.args.forEach(function (arg){
+                        cast_args.push(socket.handshake.query[arg])
+                    })
+                }
                 // get highlight to json
-                cast_highlight_json = cast.highlight
+                if (cast.highlight){
+                    cast_highlight_json = cast.highlight
+                } else {
+                    cast_highlight_json = []
+                }
             }
         })
     
         //send json highlight -> client
         socket.emit('highlight', cast_highlight_json)
 
-        //replace args
-        cast_args.forEach( function (arg){
-            cmd_string = cmd_string.replace('{}', arg)
-        })
-    
+        //replace vars
+        if (cast_args){
+            //replace args
+            var new_cmd_string = cmd_string.replace(/\{\}/g, '%s');
+            var cmd = util.format(new_cmd_string, ...cast_args);
+        }
+
         //format to spawn dict
-        var cmd = cmd_string.split(' ')
-        var cmd_first = cmd[0]
-        cmd.shift()
+        var cmd_list = cmd.split(' ')
+        var cmd_first = cmd_list[0]
+        cmd_list.shift()
     
         //run
         socket.on('run', function () {
-            run = spawn(cmd_first, cmd)
+            run = spawn(cmd_first, cmd_list)
             //on new data
             //stdout
             run.stdout.pipe(split()).on('data', (data) => {
@@ -152,4 +147,4 @@ app.use(function(req, res, next){
     res.status(404).send('<span>Page Introuvable...</span>')
 })
 
-server.listen(8000)
+server.listen(8080)
