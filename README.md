@@ -2,7 +2,74 @@
 
 A node app to stream multiple shell output realtime with args and highlighting.
 
+``casts.yml``
+```
+- name: Rainbow
+  description: "Test word highlights and stream"
+  url: /rainbow
+  cmd: ./tests/rainbow.sh
+  # 'word' and 'line' support RegExp
+  # 'class' could be any class define in public/css/custom.css
+  highlight:
+    # 'word' highlight only matching word
+    - word: 'white'
+      class: white
+    - word: 'hide'
+      class: hide
+    - word: 'gray'
+      class: gray
+    - word: 'red'
+      class: red
+    - word: 'orange'
+      class: orange
+    - word: 'yellow'
+      class: yellow
+    - word: 'purple'
+      class: purple
+    - word: 'blue'
+      class: blue
+    - word: 'green'
+      class: green
+    # 'line' highlight only matching line
+    - line: '0.1'
+      class: yellow
+```
+``tests/rainbow.sh``
+```
+ #!/bin/bash
+for i in {0..20..1}
+do
+    echo "white hide gray hide red hide orange hide yellow hide purple hide blue hide green" 
+    echo "...lets sleep 0.$i s"
+    sleep 0.$i
+done   
+```
 ![Alt Text](tests/rainbow.gif)
+
+``casts.yml``
+```
+- name: Args
+  description: "Test args and suburls"
+  url: /args/test
+  # Get /args/test?hostname=foo&ip=192.168.0.1&mac=00:11:22:33:44:55
+  # will be run as "./tests/args.sh foo 192.168.0.1 00:11:22:33:44:55"
+  cmd: ./tests/args.sh {} {} {}
+  args:
+    - hostname
+    - ip
+    - mac
+```
+``tests/args.sh``
+```
+#!/bin/bash
+
+printf "%-20s" "Hostname:"
+printf "$1\n"
+printf "%-20s" "IP:"
+printf "$2\n"
+printf "%-20s" "Mac:"
+printf "$3\n"
+```
 ![Alt Text](tests/args.png)
 
 # Installation
