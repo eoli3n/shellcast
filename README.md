@@ -1,5 +1,8 @@
 # ShellCast
 
+## Examples
+
+### Rainbow
 A node app to stream multiple shell output realtime with args and highlighting.
 
 ``casts.yml``
@@ -45,6 +48,8 @@ do
 done   
 ```
 ![Alt Text](tests/rainbow.gif)
+
+### Args
 
 ``casts.yml``
 ```
