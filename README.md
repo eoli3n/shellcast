@@ -1,9 +1,10 @@
 # ShellCast
 
+A node app to stream multiple shell output realtime with args and highlighting.
+
 ## Examples
 
 ### Rainbow
-A node app to stream multiple shell output realtime with args and highlighting.
 
 ``casts.yml``
 ```
