@@ -39,7 +39,7 @@ var config = ini.parse(fs.readFileSync('./config.ini', 'utf-8'))
 // read yaml file
 var casts = yaml.safeLoad(fs.readFileSync('casts.yml', 'utf8'));
 
-// when query /host
+// when query url
 casts.forEach(function (cast){
     //remove last '/' fix
     app.get( cast.url.replace(/\/$/, '') , function(req, res) {
@@ -51,13 +51,8 @@ casts.forEach(function (cast){
             }
         }
     
-        //init render args
-        var values = { 
-            title: cast.name
-        }
-
         // render html
-        res.render('index', values)
+        res.render('index', title: cast.name)
     })
 })
 
@@ -100,7 +95,7 @@ io.sockets.on('connection', function (socket) {
 
         //replace vars
         if (cast_args){
-            //replace args
+            //substitute '{}' with args
             var new_cmd_string = cmd_string.replace(/\{\}/g, '%s');
             var cmd = util.format(new_cmd_string, ...cast_args);
         }
@@ -136,7 +131,6 @@ io.sockets.on('connection', function (socket) {
     
         //on disconnect
         socket.on('disconnect', function() {
-            //console.log( socket.handshake.query['target'] + ' : socket disconnected.')
             run.kill('SIGHUP')
         })
     })
