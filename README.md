@@ -77,25 +77,21 @@ printf "$3\n"
 ```
 ![Alt Text](tests/args.png)
 
-# Installation
+## Installation
 ```
 git clone https://github.com/eoli3n/shellcast
 cd shellcast
 npm install
 ```
+## Configuration
+Please read [casts.yml](casts.yml) and [config.ini](config.ini)
 
+### Configure with nginx
 ```
 mkdir -p /srv/node
 cd /srv/node
-git clone ...
-cd shellcast
-npm install
+##install
 ```
-
-# Configuration
-Please read [casts.yml](casts.yml) and [config.ini](config.ini)
-
-## Configure with nginx
 ```
 cat << EOF > /etc/nginx/sites-available/shellcast
 server {
@@ -119,11 +115,14 @@ server {
     }
 }
 EOF
+```
+
+```
 ln -s /etc/nginx/sites-available/shellcast /etc/nginx/sites-enabled/shellcast
 systemctl restart nginx
 ```
 
-## Start NodeJS app with pm2
+### Start NodeJS app with pm2
 
 ```
 # install pm2
