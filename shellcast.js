@@ -98,7 +98,7 @@ io.sockets.on('connection', function (socket) {
                     cast_args.push(socket.handshake.query[arg])
                 })
                 // get highlight to json
-                cast_highlight_json = JSON.stringify(cast.highlight)
+                cast_highlight_json = cast.highlight
             }
         })
     
