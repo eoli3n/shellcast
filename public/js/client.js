@@ -49,7 +49,5 @@ socket.on('line', (data) => {
     $('#code').append(line);
 
     //Autoscroll
-    // see http://jsfiddle.net/7Lquu899/4/ for complete page scroll
-    $('#code').animate({scrollTop: $('#code').prop("scrollHeight")}, 10);
-
+    $('html').animate({scrollTop: $('html').prop("scrollHeight")}, 10);
 });

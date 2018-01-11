@@ -3,9 +3,10 @@
   description: "Test word highlights and stream"
   url: /rainbow
   cmd: ./tests/rainbow.sh
+  # 'word' and 'line' support RegExp
+  # 'class' could be any class define in public/css/custom.css
   highlight:
-    # 'word' support regexp
-    # 'class' could be any class define in public/css/custom.css
+    # 'word' highlight only matching word
     - word: 'white'
       class: white
     - word: 'hide'
@@ -24,6 +25,7 @@
       class: blue
     - word: 'green'
       class: green
+    # 'line' highlight only matching line
     - line: '0.1'
       class: yellow
 
