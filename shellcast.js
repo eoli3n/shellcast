@@ -78,6 +78,11 @@ io.sockets.on('connection', function (socket) {
     console.log('Socket connected.')
     console.log(socket.handshake.query)
 
+    //debug
+    socket.on('log', function(data){
+        console.log(data)
+    })
+
     socket.on('run', function (url) {
         console.log('url: ' + url)
 
@@ -94,7 +99,6 @@ io.sockets.on('connection', function (socket) {
                 })
                 // get highlight to json
                 cast_highlight_json = JSON.stringify(cast.highlight)
-                console.log(cast_highlight_json)
             }
         })
     
@@ -131,7 +135,7 @@ io.sockets.on('connection', function (socket) {
     
         //on close
         run.on('close', function (code) {
-            console.log( 'Cast ' + socket.handshake.query['cmd'] + ' exited with code ' + code)
+            console.log( 'Cast ' + url + ' exited with code ' + code)
         })
     
         //on disconnect

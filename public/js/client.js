@@ -1,10 +1,14 @@
 var socket = io.connect(window.location.origin + window.location.search, { reconnection: false })
 
-socket.emit('run', window.location.pathname )
+socket.emit('run', window.location.pathname );
 
-socket.on('highlight', (data) => { json_highlight = data })
+socket.on('highlight', (data) => {
+    json_highlight = data
+});
 
 socket.on('line', (data) => {
+    //debug
+    socket.emit('log', json_highlight)
     var preline = $.map(data.split(' '), function(word) {
         var a = $('<span>', { text: word + ' ' })
         json_highlight.forEach(function (hl){
@@ -28,5 +32,5 @@ socket.on('line', (data) => {
     //Then scroll to that line
     // see http://jsfiddle.net/7Lquu899/4/ for complete page scroll
     $('#code').animate({scrollTop: $('#code').prop("scrollHeight")}, 10);
-    }
+    })
 });
