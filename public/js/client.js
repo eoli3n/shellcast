@@ -2,17 +2,16 @@
 var socket = io.connect(window.location.origin + window.location.search, { reconnection: false })
 
 //trigger run with cast url
-socket.emit('run', window.location.pathname );
+socket.emit('init', window.location.pathname );
 
 //get cast highlight
 socket.on('highlight', (data) => {
     json_highlight = data
+    socket.emit('run')
 });
 
 //stream lines
 socket.on('line', (data) => {
-    //debug
-    socket.emit('log', json_highlight)
 
     //word highlight
     var preline = $.map(data.split(' '), function(word) {
@@ -20,6 +19,8 @@ socket.on('line', (data) => {
         json_highlight.forEach(function (hl){
             if (hl['word']){
                a.toggleClass(hl['color'], word.match('/' + hl['word'] + '/') != null )
+               //debug
+               socket.emit('log', a.prop('outerHTML'))
             }
         })
         return a;

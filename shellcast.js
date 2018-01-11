@@ -83,7 +83,7 @@ io.sockets.on('connection', function (socket) {
         console.log(data)
     })
 
-    socket.on('run', function (url) {
+    socket.on('init', function (url) {
         console.log('url: ' + url)
 
         //match yml and client url
@@ -116,26 +116,27 @@ io.sockets.on('connection', function (socket) {
         cmd.shift()
     
         //run
-        run = spawn(cmd_first, cmd)
+        socket.on('run', function () {
+            run = spawn(cmd_first, cmd)
+            //on new data
+            //stdout
+            run.stdout.pipe(split()).on('data', (data) => {
+                line = `${data}`
+                //console.log(line)
+                socket.emit('line', line)
+            })
     
-        //on new data
-        //stdout
-        run.stdout.pipe(split()).on('data', (data) => {
-            line = `${data}`
-            //console.log(line)
-            socket.emit('line', line)
-        })
+            //stderr
+            run.stderr.pipe(split()).on('data', (data) => {
+                line = `${data}`
+                //console.log(line)
+                socket.emit('line', line)
+            })
     
-        //stderr
-        run.stderr.pipe(split()).on('data', (data) => {
-            line = `${data}`
-            //console.log(line)
-            socket.emit('line', line)
-        })
-    
-        //on close
-        run.on('close', function (code) {
-            console.log( 'Cast ' + url + ' exited with code ' + code)
+            //on close
+            run.on('close', function (code) {
+                console.log( 'Cast ' + url + ' exited with code ' + code)
+            })
         })
     
         //on disconnect
