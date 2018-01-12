@@ -6,16 +6,13 @@ A node app to stream multiple shell output realtime with args and highlighting.
 
 ### Rainbow
 
-``casts.yml``
+``config.yml``
 ```
 - name: Rainbow
   description: "Test word highlights and stream"
   url: /rainbow
   cmd: ./tests/rainbow.sh
-  # 'word' and 'line' support RegExp
-  # 'class' could be any class define in public/css/custom.css
   highlight:
-    # 'word' highlight only matching word
     - word: 'white'
       class: white
     - word: 'hide'
@@ -34,7 +31,6 @@ A node app to stream multiple shell output realtime with args and highlighting.
       class: blue
     - word: 'green'
       class: green
-    # 'line' highlight only matching line
     - line: '0.1'
       class: yellow
 ```
@@ -52,13 +48,12 @@ done
 
 ### Args
 
-``casts.yml``
+``config.yml``
 ```
 - name: Args
-  description: "Test args and suburls"
+  description: "Test args, suburls, password and plain text"
   url: /args/test
-  # Get /args/test?hostname=foo&ip=192.168.0.1&mac=00:11:22:33:44:55
-  # will be run as "./tests/args.sh foo 192.168.0.1 00:11:22:33:44:55"
+  password: suburlpass
   cmd: ./tests/args.sh {} {} {}
   args:
     - hostname
@@ -76,7 +71,10 @@ printf "$2\n"
 printf "%-20s" "Mac:"
 printf "$3\n"
 ```
+#### Console
 ![Alt Text](tests/args.png)
+#### Plain
+![Alt Text](tests/args_plain.png)
 
 ## Installation
 ```
@@ -85,7 +83,7 @@ cd shellcast
 npm install
 ```
 ## Configuration
-Please read [casts.yml](casts.yml) and [config.ini](config.ini)
+Please read [config.yml](casts.yml)
 
 ### Configure with nginx
 ```

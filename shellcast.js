@@ -6,6 +6,7 @@ var express = require('express')
   , util = require('util')
   , split = require('split')
   , spawn = require('child_process').spawn
+  , exec = require('child_process').exec
   , server = require('http').Server(app)
   , io = require('socket.io')(server, {
     cookie: false
@@ -15,14 +16,13 @@ var express = require('express')
   , morgan = require('morgan')
   , path= require('path')
   , favicon = require('serve-favicon')
-  , sass = require('node-sass')
 
 // assign the handlebars engine to .html files
 app.engine('html', cons.handlebars)
 
 // set .html as the default extension
 app.set('view engine', 'html')
-app.set('views', __dirname + '/views')
+app.set('views', __dirname + '/views/')
 
 // declare static ressources
 app.use(express.static(__dirname + '/public'))
@@ -33,26 +33,61 @@ app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')))
 // morgan logs
 app.use(morgan('combined'))
 
-// read config file
-var config = ini.parse(fs.readFileSync('./config.ini', 'utf-8'))
-
-// read yaml file
-var casts = yaml.safeLoad(fs.readFileSync('casts.yml', 'utf8'));
+// read yml config file
+var config = yaml.safeLoad(fs.readFileSync('config.yml', 'utf8'));
 
 // when query url
-casts.forEach(function (cast){
+config.forEach(function (cast){
     //remove last '/' fix
     app.get( cast.url.replace(/\/$/, '') , function(req, res) {
     
-        // if secure=yes test password param
-        if (config.default.secure === "yes") {
-            if (config.default.password != req.query.password) {
+        // if password set, test it
+        if (cast.password) {
+            if (cast.password != req.query.password) {
                 res.status(404).send('<span>Missing or wrong password...</span>')
             }
         }
-    
+        
+        //test args
+        if (cast.args){
+            cast.args.forEach(function (arg){
+                if (typeof req.query[arg] === 'undefined'){
+                    res.status(404).send('<span>Missing ' + arg + ' parameter</span>')
+                }
+            })
+        }
+
         // render html
-        res.render('index', title: cast.name)
+        res.render('index', { title: cast.name })
+    })
+
+    // when query url /plain
+    app.get( cast.url.replace(/\/$/, '') + '/plain' , function(req, res) {
+        if (cast.password) {
+            if (cast.password != req.query.password) {
+                res.status(404).send('<span>Missing or wrong password...</span>')
+            }
+        } 
+        //test and set args
+        if (cast.args){
+            cast_args = []
+            cast.args.forEach(function (arg){
+                if (typeof req.query[arg] === 'undefined'){
+                    res.status(404).send('<span>Missing ' + arg + ' parameter</span>')
+                } else {
+                    cast_args.push(req.query[arg])
+                }
+            })
+            //substitute '{}' with args
+            var new_cmd_string = cast.cmd.replace(/\{\}/g, '%s');
+            var cmd = util.format(new_cmd_string, ...cast_args);
+        }
+
+        //run
+        exec(cmd, function(error, stdout, stderr) {
+            res.header("Content-Type", "text/cache-manifest");
+            res.render('plain/index', { content: stdout })
+        })
     })
 })
 
@@ -69,7 +104,7 @@ io.sockets.on('connection', function (socket) {
         //console.log('url: ' + url)
 
         //match yml and client url
-        casts.forEach(function (cast){
+        config.forEach(function (cast){
             //remove last '/' fix
             if (cast.url.replace(/\/$/, '') == url.replace(/\/$/, '')){
                 // get string cmd
