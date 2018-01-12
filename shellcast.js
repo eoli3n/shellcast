@@ -34,7 +34,7 @@ app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')))
 app.use(morgan('combined'))
 
 // read yml config file
-var config = yaml.safeLoad(fs.readFileSync('config.yml', 'utf8'));
+var config = yaml.safeLoad(fs.readFileSync(process.argv[2], 'utf8'));
 
 // when query url
 config.forEach(function (cast){
@@ -52,7 +52,7 @@ config.forEach(function (cast){
         if (cast.args){
             cast.args.forEach(function (arg){
                 if (typeof req.query[arg] === 'undefined'){
-                    res.status(404).send('<span>Missing ' + arg + ' parameter</span>')
+                    res.status(404).send('<span>Missing "' + arg + '" parameter</span>')
                 }
             })
         }
@@ -73,7 +73,7 @@ config.forEach(function (cast){
             cast_args = []
             cast.args.forEach(function (arg){
                 if (typeof req.query[arg] === 'undefined'){
-                    res.status(404).send('<span>Missing ' + arg + ' parameter</span>')
+                    res.status(404).send('<span>Missing "' + arg + '" parameter</span>')
                 } else {
                     cast_args.push(req.query[arg])
                 }

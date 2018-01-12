@@ -72,8 +72,10 @@ printf "%-20s" "Mac:"
 printf "$3\n"
 ```
 #### Console
+``http://localhost:8080/args/test``
 ![Alt Text](tests/args.png)
 #### Plain
+``http://localhost:8080/args/test/plain``
 ![Alt Text](tests/args_plain.png)
 
 ## Installation
@@ -82,8 +84,13 @@ git clone https://github.com/eoli3n/shellcast
 cd shellcast
 npm install
 ```
+## Test
+```
+node shellcast.js config.yml
+```
+
 ## Configuration
-Please read [config.yml](casts.yml)
+Please read [config.yml](config.yml)
 
 ### Configure with nginx
 ```
@@ -129,7 +136,7 @@ npm install pm2 -g
 
 # start
 cd /srv/node/shellcast
-pm2 start shellcast.js
+pm2 start shellcast.js -- config.yml
 
 # infos
 pm2 show shellcast
@@ -139,4 +146,7 @@ pm2 logs shellcast --lines 100
 
 # restart
 pm2 restart shellcast
+
+# change config file
+pm2 restart shellcast -- other.yml
 ```
