@@ -81,6 +81,7 @@ config.forEach(function (cast){
             //substitute '{}' with args
             var new_cmd_string = cast.cmd.replace(/\{\}/g, '%s');
             var cmd = util.format(new_cmd_string, ...cast_args);
+            console.log(cmd)
         }
 
         //run
