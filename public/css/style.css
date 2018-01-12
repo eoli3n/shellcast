@@ -18,7 +18,6 @@
   word-wrap: break-word;     
   counter-reset: line;
   overflow-y: auto;
-  max-height: 900px;
 }
 
 .log-line {
