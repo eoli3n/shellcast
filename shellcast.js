@@ -62,14 +62,14 @@ config.forEach(function (cast){
     // when query url /plain
     app.get( cast.url.replace(/\/$/, '') + '/plain' , function(req, res) {
         if ((cast.password) && (cast.password != req.query.password)) {
-            res.status(404).send('<span>Missing or wrong password...</span>')
+            res.status(404).send('Missing or wrong password...')
         } else {
             //test and set args
             if (cast.args){
                 cast_args = []
                 cast.args.forEach(function (arg){
                     if (typeof req.query[arg] === 'undefined'){
-                        res.status(404).send('<span>Missing "' + arg + '" parameter</span>')
+                        res.status(404).send('Missing "' + arg + '" parameter')
                     } else {
                         cast_args.push(req.query[arg])
                     }
