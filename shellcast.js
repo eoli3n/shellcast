@@ -88,8 +88,7 @@ config.forEach(function (cast){
 
         //run
         exec(cmd, function(error, stdout, stderr) {
-            res.header("Content-Type", "text/cache-manifest");
-            res.render('plain/index', { content: stdout })
+            res.send(stdout)
         })
     })
 })
