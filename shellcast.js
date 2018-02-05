@@ -42,54 +42,51 @@ config.forEach(function (cast){
     app.get( cast.url.replace(/\/$/, '') , function(req, res) {
     
         // if password set, test it
-        if (cast.password) {
-            if (cast.password != req.query.password) {
-                res.status(404).send('<span>Missing or wrong password...</span>')
+        if ((cast.password) && (cast.password != req.query.password)) {
+            res.status(404).send('<span>Missing or wrong password...</span>')
+        } else {
+            //test args
+            if (cast.args){
+                cast.args.forEach(function (arg){
+                    if (typeof req.query[arg] === 'undefined'){
+                        res.status(404).send('<span>Missing "' + arg + '" parameter</span>')
+                    }
+                })
             }
-        }
-        
-        //test args
-        if (cast.args){
-            cast.args.forEach(function (arg){
-                if (typeof req.query[arg] === 'undefined'){
-                    res.status(404).send('<span>Missing "' + arg + '" parameter</span>')
-                }
-            })
-        }
 
-        // render html
-        res.render('index', { title: cast.name })
+            // render html
+            res.render('index', { title: cast.name })
+        }
     })
 
     // when query url /plain
     app.get( cast.url.replace(/\/$/, '') + '/plain' , function(req, res) {
-        if (cast.password) {
-            if (cast.password != req.query.password) {
-                res.status(404).send('<span>Missing or wrong password...</span>')
-            }
-        } 
-        //test and set args
-        if (cast.args){
-            cast_args = []
-            cast.args.forEach(function (arg){
-                if (typeof req.query[arg] === 'undefined'){
-                    res.status(404).send('<span>Missing "' + arg + '" parameter</span>')
-                } else {
-                    cast_args.push(req.query[arg])
-                }
-            })
-            //substitute '{}' with args
-            var new_cmd_string = cast.cmd.replace(/\{\}/g, '%s');
-            var cmd = util.format(new_cmd_string, ...cast_args);
-            console.log(cmd)
+        if ((cast.password) && (cast.password != req.query.password)) {
+            res.status(404).send('<span>Missing or wrong password...</span>')
         } else {
-            var cmd = cast.cmd
-        }
+            //test and set args
+            if (cast.args){
+                cast_args = []
+                cast.args.forEach(function (arg){
+                    if (typeof req.query[arg] === 'undefined'){
+                        res.status(404).send('<span>Missing "' + arg + '" parameter</span>')
+                    } else {
+                        cast_args.push(req.query[arg])
+                    }
+                })
+                //substitute '{}' with args
+                var new_cmd_string = cast.cmd.replace(/\{\}/g, '%s');
+                var cmd = util.format(new_cmd_string, ...cast_args);
+                console.log(cmd)
+            } else {
+                var cmd = cast.cmd
+            }
 
-        //run
-        exec(cmd, function(error, stdout, stderr) {
-            res.send(stdout)
-        })
+            //run
+            exec(cmd, function(error, stdout, stderr) {
+                res.send(stdout)
+            })
+        } 
     })
 })
 
