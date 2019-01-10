@@ -83,7 +83,8 @@ config.forEach(function (cast){
             }
 
             //run
-            exec(cmd, function(error, stdout, stderr) {
+            exec(cmd, {maxBuffer: 1024 * 2000}, function(error, stdout, stderr) {
+                res.setHeader('Content-Type', 'text/plain')
                 res.send(stdout)
             })
         } 
