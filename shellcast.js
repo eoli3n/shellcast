@@ -21,11 +21,11 @@ const path= require('path');
 //app.engine('html', cons.handlebars)
 //
 // set .html as the default extension
-app.set('view engine', 'html')
-app.set('views', __dirname + '/views/')
+//app.set('view engine', 'html')
+//app.set('views', __dirname + '/views/')
 
 // declare static ressources
-app.use(express.static(path.join(__dirname, '/public')))
+//app.use(express.static(path.join(__dirname, '/public')))
 //
 //// serve favicon
 //app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')))
@@ -38,7 +38,7 @@ app.use(express.static(path.join(__dirname, '/public')))
 
 //DEBUG SIMPLIFY
 app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/views/index.html');
+    res.sendFile(__dirname + '/index.html');
 });
 
 //// when query url
@@ -97,7 +97,7 @@ app.get('/', (req, res) => {
 //})
 
 //DEBUG SIMPLIFY
-io.on('connection', function (socket) {
+io.on('connection', (socket) => {
     console.log('Socket connected.')
 })
 
@@ -186,6 +186,6 @@ io.on('connection', function (socket) {
 //    res.status(404).send('<span>Page Introuvable...</span>')
 //})
 
-server.listen(8080, () => {
-  console.log('listening on *:8080');
+server.listen(3000, () => {
+  console.log('listening on *:3000');
 });
