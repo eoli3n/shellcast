@@ -88,6 +88,9 @@ npm install
 ```
 node shellcast.js config.yml
 ```
+Then access to 
+- http://localhost:8080/args/test?password=suburlpass&hostname=toto&mac=tata&ip=192.168.0.1
+- http://localhost:8080/args/test/plain?password=suburlpass&hostname=toto&mac=tata&ip=192.168.0.1
 
 ## Configuration
 Please read [config.yml](config.yml)
