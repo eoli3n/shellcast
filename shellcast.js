@@ -24,7 +24,7 @@ app.set('view engine', 'html')
 app.set('views', __dirname + '/views/')
 
 // declare static ressources
-app.use(express.static(__dirname + '/public'))
+app.use(express.static(path.join(__dirname, '/public')))
 
 // serve favicon
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')))
@@ -91,13 +91,13 @@ config.forEach(function (cast){
 })
 
 io.sockets.on('connection', function (socket) {
-    console.log('Socket connected.')
-    console.log(socket.handshake.query)
+    //console.log('Socket connected.')
+    //console.log(socket.handshake.query)
 
     //debug
-    socket.on('log', function(data){
-        console.log(data)
-    })
+    //socket.on('log', function(data){
+    //    console.log(data)
+    //})
 
     socket.on('init', function (url) {
         //console.log('url: ' + url)
@@ -175,4 +175,6 @@ app.use(function(req, res, next){
     res.status(404).send('<span>Page Introuvable...</span>')
 })
 
-server.listen(8080)
+server.listen(3000, () => {
+  console.log('listening on *:3000');
+});

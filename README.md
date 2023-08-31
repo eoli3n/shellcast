@@ -72,10 +72,10 @@ printf "%-20s" "Mac:"
 printf "$3\n"
 ```
 #### Console
-``http://localhost:8080/args/test``
+``http://localhost:3000/args/test``
 ![Alt Text](tests/args.png)
 #### Plain
-``http://localhost:8080/args/test/plain``
+``http://localhost:3000/args/test/plain``
 ![Alt Text](tests/args_plain.png)
 
 ## Installation
@@ -89,8 +89,8 @@ npm install
 node shellcast.js config.yml
 ```
 Then access to 
-- http://localhost:8080/args/test?password=suburlpass&hostname=toto&mac=tata&ip=192.168.0.1
-- http://localhost:8080/args/test/plain?password=suburlpass&hostname=toto&mac=tata&ip=192.168.0.1
+- http://localhost:3000/args/test?password=suburlpass&hostname=toto&mac=tata&ip=192.168.0.1
+- http://localhost:3000/args/test/plain?password=suburlpass&hostname=toto&mac=tata&ip=192.168.0.1
 
 ## Configuration
 Please read [config.yml](config.yml)
@@ -115,7 +115,7 @@ server {
     ssl_prefer_server_ciphers on;
 
     location / {
-        proxy_pass http://localhost:8080;
+        proxy_pass http://localhost:3000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
