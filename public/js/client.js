@@ -1,5 +1,5 @@
 //connect socket
-var socket = io.connect(window.location.origin + window.location.search, { reconnection: false })
+var socket = io.connect()
 
 //trigger run with cast url
 socket.emit('init', window.location.pathname );

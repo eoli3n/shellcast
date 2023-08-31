@@ -1,40 +1,40 @@
 const express = require('express');
-const http = require('http');
 const app = express();
+const http = require('http');
 const server = http.createServer(app);
 const { Server } = require("socket.io");
 const io = new Server(server);
-const cons = require('consolidate');
-const fs = require('fs');
-const os = require('os');
-const util = require('util');
-const split = require('split');
-const spawn = require('child_process').spawn;
-const exec = require('child_process').exec;
-const yaml = require('js-yaml');
-const ini = require('ini');
-const morgan = require('morgan');
 const path= require('path');
-const favicon = require('serve-favicon');
-
-// assign the handlebars engine to .html files
-app.engine('html', cons.handlebars)
-
+//const cons = require('consolidate');
+//const fs = require('fs');
+//const os = require('os');
+//const util = require('util');
+//const split = require('split');
+//const spawn = require('child_process').spawn;
+//const exec = require('child_process').exec;
+//const yaml = require('js-yaml');
+//const ini = require('ini');
+//const morgan = require('morgan');
+//const favicon = require('serve-favicon');
+//
+//// assign the handlebars engine to .html files
+//app.engine('html', cons.handlebars)
+//
 // set .html as the default extension
 app.set('view engine', 'html')
 app.set('views', __dirname + '/views/')
 
 // declare static ressources
-app.use(express.static(__dirname + '/public'))
-
-// serve favicon
-app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')))
-
-// morgan logs
-app.use(morgan('combined'))
-
-// read yml config file
-var config = yaml.safeLoad(fs.readFileSync(process.argv[2], 'utf8'));
+app.use(express.static(path.join(__dirname, '/public')))
+//
+//// serve favicon
+//app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')))
+//
+//// morgan logs
+//app.use(morgan('combined'))
+//
+//// read yml config file
+//var config = yaml.safeLoad(fs.readFileSync(process.argv[2], 'utf8'));
 
 //DEBUG SIMPLIFY
 app.get('/', (req, res) => {
