@@ -1,4 +1,5 @@
-var express = require('express')
+const express = require('express')
+  , http = require('http')
   , app = express()
   , cons = require('consolidate')
   , fs = require('fs')
@@ -7,10 +8,8 @@ var express = require('express')
   , split = require('split')
   , spawn = require('child_process').spawn
   , exec = require('child_process').exec
-  , server = require('http').Server(app)
-  , io = require('socket.io')(server, {
-    cookie: false
-  })
+  , server = http.createServer(app)
+  , io = require('socket.io').listen(server)
   , yaml = require('js-yaml')
   , ini = require('ini')
   , morgan = require('morgan')
@@ -93,12 +92,12 @@ config.forEach(function (cast){
 
 io.sockets.on('connection', function (socket) {
     console.log('Socket connected.')
-    //console.log(socket.handshake.query)
+    console.log(socket.handshake.query)
 
     //debug
-    //socket.on('log', function(data){
-    //    console.log(data)
-    //})
+    socket.on('log', function(data){
+        console.log(data)
+    })
 
     socket.on('init', function (url) {
         //console.log('url: ' + url)
