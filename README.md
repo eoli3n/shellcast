@@ -1,6 +1,6 @@
 # ShellCast
 
-A node app to stream multiple shell output realtime with args and highlighting.
+A node app to stream multiple shell output realtime with args and highlighting.  
 :exclamation: Shellcast defaultly perform in a subdir "shellcast" now.
 
 ## Examples
