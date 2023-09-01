@@ -9,12 +9,15 @@ const express = require('express')
   , spawn = require('child_process').spawn
   , exec = require('child_process').exec
   , server = http.createServer(app)
-  , io = require('socket.io').listen(server)
+  , subdir = "/shellcast"
+  , io = require('socket.io').listen(server, {path: subdir + '/socket.io'})
   , yaml = require('js-yaml')
   , ini = require('ini')
   , morgan = require('morgan')
   , path= require('path')
   , favicon = require('serve-favicon')
+
+// set subdir
 
 // assign the handlebars engine to .html files
 app.engine('html', cons.handlebars)
@@ -23,8 +26,8 @@ app.engine('html', cons.handlebars)
 app.set('view engine', 'html')
 app.set('views', __dirname + '/views/')
 
-// declare static ressources
-app.use(express.static(path.join(__dirname, '/public')))
+// declare static ressources in subdir
+app.use(subdir, express.static(path.join(__dirname, '/public')))
 
 // serve favicon
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')))
@@ -37,8 +40,12 @@ var config = yaml.safeLoad(fs.readFileSync(process.argv[2], 'utf8'));
 
 // when query url
 config.forEach(function (cast){
+
+    //prepend subdir
+    cast.url = cast.url.replace (/^/,subdir);
+
     //remove last '/' fix
-    app.get( cast.url.replace(/\/$/, '') , function(req, res) {
+    app.get(cast.url.replace(/\/$/, '') , function(req, res) {
     
         // if password set, test it
         if ((cast.password) && (cast.password != req.query.password)) {

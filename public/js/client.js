@@ -1,5 +1,9 @@
 //connect socket
-var socket = io.connect(window.location.origin + window.location.search, { reconnection: false })
+var location_sub = window.location.origin + window.location.search
+console.log(location_sub)
+var socket = io.connect(location_sub, {
+  path: "/shellcast/socket.io"
+})
 
 //trigger run with cast url
 socket.emit('init', window.location.pathname );
