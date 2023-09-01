@@ -1,6 +1,7 @@
 # ShellCast
 
 A node app to stream multiple shell output realtime with args and highlighting.
+:exclamation: Shellcast defaultly perform in a subdir "shellcast" now.
 
 ## Examples
 
@@ -72,10 +73,10 @@ printf "%-20s" "Mac:"
 printf "$3\n"
 ```
 #### Console
-``http://localhost:3000/args/test``
+``http://localhost:3000/shellcast/args/test``
 ![Alt Text](tests/args.png)
 #### Plain
-``http://localhost:3000/args/test/plain``
+``http://localhost:3000/shellcast/args/test/plain``
 ![Alt Text](tests/args_plain.png)
 
 ## Installation
@@ -89,16 +90,15 @@ npm install
 node shellcast.js config.yml
 ```
 Then access to 
-- http://localhost:3000/args/test?password=suburlpass&hostname=toto&mac=tata&ip=192.168.0.1
-- http://localhost:3000/args/test/plain?password=suburlpass&hostname=toto&mac=tata&ip=192.168.0.1
+- http://localhost:3000/shellcast/args/test?password=suburlpass&hostname=toto&mac=tata&ip=192.168.0.1
+- http://localhost:3000/shellcast/args/test/plain?password=suburlpass&hostname=toto&mac=tata&ip=192.168.0.1
 
 ## Configuration
 Please read [config.yml](config.yml)
 
 ### Configure with nginx
 ```
-mkdir -p /srv/node
-cd /srv/node
+mkdir -p /opt/shellcast
 ##install
 ```
 ```
@@ -114,13 +114,15 @@ server {
     ssl_ciphers          HIGH:!ADH:!MD5;
     ssl_prefer_server_ciphers on;
 
-    location / {
+    location /shellcast/ {
+        add_header Access-Control-Allow-Origin *;
         proxy_pass http://localhost:3000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
         proxy_cache_bypass $http_upgrade;
+        proxy_temp_path /tmp/data;
     }
 }
 EOF
@@ -131,25 +133,23 @@ ln -s /etc/nginx/sites-available/shellcast /etc/nginx/sites-enabled/shellcast
 systemctl restart nginx
 ```
 
-### Start NodeJS app with pm2
+### Start NodeJS app with systemd
+Create a service file in /etc/systemd/system/shellcast.service
 
 ```
-# install pm2
-npm install pm2 -g
+[Unit]
+Description=shellcast.js
+After=network.target
 
-# start
-cd /srv/node/shellcast
-pm2 start shellcast.js -- config.yml
+[Service]
+Type=simple
+ExecStartPost=/bin/sh -c 'umask 022; pgrep node > /var/run/shellcast.pid'
+Environment=NODE_PORT=3000
+WorkingDirectory=/opt/shellcast
+User=root
+ExecStart=/usr/bin/node /opt/shellcast/shellcast.js /opt/shellcast/config.yml
+Restart=on-failure
 
-# infos
-pm2 show shellcast
-
-# logs
-pm2 logs shellcast --lines 100
-
-# restart
-pm2 restart shellcast
-
-# change config file
-pm2 restart shellcast -- other.yml
+[Install]
+WantedBy=multi-user.target
 ```
