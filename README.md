@@ -1,7 +1,7 @@
 # ShellCast
 
 A node app to stream multiple shell output realtime with args and highlighting.  
-:exclamation: Shellcast defaultly perform in a subdir "shellcast" now.
+:exclamation: Shellcast defaultly perform in a "/shellcast" subdir now.
 
 ## Examples
 
