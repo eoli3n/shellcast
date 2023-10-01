@@ -67,7 +67,7 @@ config.forEach(function (cast){
                         return;
                     } else {
                         // prevent shell injection
-                        if (/[\s;&<>|()]/.test(req.query[arg])) {
+                        if (/[\s;&<>|()/\\!\*\$=+~]/.test(req.query[arg])) {
                             res.status(500).send('"' + arg + '" cannot contains special chars...')
                             stop = true;       
                             return;
@@ -106,7 +106,7 @@ config.forEach(function (cast){
                     } else {
 
                         // prevent shell injection
-                        if (/[\s;&<>|()]/.test(req.query[arg])) {
+                        if (/[\s;&<>|()/\\!\*\$=+~]/.test(req.query[arg])) {
                             res.status(500).send('"' + arg + '" cannot contains special chars...')
                             stop = true;       
                             return;
