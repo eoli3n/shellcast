@@ -46,53 +46,87 @@ config.forEach(function (cast){
 
     //remove last '/' fix
     app.get(cast.url.replace(/\/$/, '') , function(req, res) {
+        // Set header for all answers
+        res.setHeader('Content-Type', 'text/plain')
+        var stop = false;
     
         // if password set, test it
         if ((cast.password) && (cast.password != req.query.password)) {
-            res.status(404).send('<span>Missing or wrong password...</span>')
+            res.status(500).send('<span>Missing or wrong password...</span>')
         } else {
             //test args
             if (cast.args){
+                cast_args = []
                 cast.args.forEach(function (arg){
+                    // kill foreach
+                    if (stop) { return; }
+                    
                     if (typeof req.query[arg] === 'undefined'){
-                        res.status(404).send('<span>Missing "' + arg + '" parameter</span>')
+                        res.status(500).send('<span>Missing "' + arg + '" parameter</span>')
+                        stop = true;       
+                        return;
+                    } else {
+                        // prevent shell injection
+                        if (/[\s;&<>|()]/.test(req.query[arg])) {
+                            res.status(500).send('"' + arg + '" cannot contains special chars...')
+                            stop = true;       
+                            return;
+                        } else {
+                            cast_args.push(req.query[arg])
+                        }
                     }
                 })
             }
 
             // render html
-            res.render('index', { title: cast.name })
+            if (!stop) {
+                res.render('index', { title: cast.name })
+            }
         }
     })
 
     // when query url /plain
     app.get( cast.url.replace(/\/$/, '') + '/plain' , function(req, res) {
+        // Set header for all answers
+        res.setHeader('Content-Type', 'text/plain')
+        var stop = false;
+
         if ((cast.password) && (cast.password != req.query.password)) {
-            res.status(404).send('Missing or wrong password...')
+            res.status(500).send('Missing or wrong password...')
         } else {
-            //test and set args
+            // test and set args
             if (cast.args){
                 cast_args = []
                 cast.args.forEach(function (arg){
                     if (typeof req.query[arg] === 'undefined'){
-                        res.status(404).send('Missing "' + arg + '" parameter')
+                        res.status(500).send('Missing "' + arg + '" parameter')
+                        stop = true;       
+                        return;
                     } else {
-                        cast_args.push(req.query[arg])
+
+                        // prevent shell injection
+                        if (/[\s;&<>|()]/.test(req.query[arg])) {
+                            res.status(500).send('"' + arg + '" cannot contains special chars...')
+                            stop = true;       
+                            return;
+                        } else {
+                            cast_args.push(req.query[arg])
+                        }
                     }
                 })
                 //substitute '{}' with args
                 var new_cmd_string = cast.cmd.replace(/\{\}/g, '%s');
                 var cmd = util.format(new_cmd_string, ...cast_args);
-                console.log(cmd)
             } else {
                 var cmd = cast.cmd
             }
 
             //run
-            exec(cmd, {maxBuffer: 1024 * 2000}, function(error, stdout, stderr) {
-                res.setHeader('Content-Type', 'text/plain')
-                res.send(stdout)
-            })
+            if (!stop) {
+                exec(cmd, {maxBuffer: 1024 * 2000}, function(error, stdout, stderr) {
+                    res.send(stdout)
+                })
+            }
         } 
     })
 })
@@ -178,7 +212,7 @@ io.sockets.on('connection', function (socket) {
 })
 
 app.use(function(req, res, next){
-    res.setHeader('Content-Type', 'text/html')
+    res.setHeader('Content-Type', 'text/plain')
     res.status(404).send('<span>Page Introuvable...</span>')
 })
 
