@@ -80,6 +80,7 @@ config.forEach(function (cast){
 
             // render html
             if (!stop) {
+                res.setHeader('Content-Type', 'text/html')
                 res.render('index', { title: cast.name })
             }
         }
