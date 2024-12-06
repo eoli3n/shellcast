@@ -2,6 +2,7 @@
 
 A node app to stream multiple shell output realtime with args and highlighting.  
 :exclamation: Shellcast defaultly perform in a "/shellcast" subdir now.
+Change SUBDIR environment var to specify another web subdirectory.
 
 ## Examples
 
@@ -145,6 +146,7 @@ After=network.target
 Type=simple
 ExecStartPost=/bin/sh -c 'umask 022; pgrep node > /var/run/shellcast.pid'
 Environment=NODE_PORT=3000
+Environment=SUBDIR=shellcast
 WorkingDirectory=/opt/shellcast
 User=root
 ExecStart=/usr/bin/node /opt/shellcast/shellcast.js /opt/shellcast/config.yml
