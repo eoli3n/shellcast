@@ -2,7 +2,7 @@
 var location_sub = window.location.origin + window.location.search
 console.log(location_sub)
 var socket = io.connect(location_sub, {
-  path: "/shellcast/socket.io"
+  path: window.location.pathname.split('/')[1] + '/socket.io'
 })
 
 //trigger run with cast url
