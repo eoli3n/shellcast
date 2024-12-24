@@ -94,29 +94,26 @@ const createLine = (data) => {
 
 // Traitement optimisé des lignes avec requestAnimationFrame
 const processLines = () => {
-    if (!isProcessing && lineBuffer.length > 0) {
-        isProcessing = true
-        
-        requestAnimationFrame(() => {
-            const fragment = document.createDocumentFragment()
-            
-            // Traiter toutes les lignes disponibles
-            while (lineBuffer.length > 0) {
-                const line = lineBuffer.shift()
-                fragment.appendChild(createLine(line))
-            }
-            
-            document.getElementById('code').appendChild(fragment)
-            smartScroll()
-            
+    if (isProcessing) return
+    isProcessing = true
+
+    const processNextLine = () => {
+        if (lineBuffer.length === 0) {
             isProcessing = false
-            
-            // Si de nouvelles lignes sont arrivées pendant le traitement
-            if (lineBuffer.length > 0) {
-                processLines()
-            }
-        })
+            return
+        }
+
+        const line = lineBuffer.shift()
+        const fragment = document.createDocumentFragment()
+        fragment.appendChild(createLine(line))
+        
+        document.getElementById('code').appendChild(fragment)
+        smartScroll()
+        
+        requestAnimationFrame(processNextLine)
     }
+
+    requestAnimationFrame(processNextLine)
 }
 
 // Réception des lignes
