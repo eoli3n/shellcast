@@ -88,7 +88,7 @@ npm install
 ```
 ## Test
 ```
-node shellcast.js config.yml
+SUBDIR=shellcast NODE_PORT=3000 node shellcast.js config.yml
 ```
 Then access to 
 - http://localhost:3000/shellcast/args/test?password=suburlpass&hostname=toto&mac=tata&ip=192.168.0.1
