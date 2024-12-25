@@ -90,7 +90,7 @@ const createLine = (data) => {
 }
 
 // Gestion du curseur de taille de paquet
-const batchSizes = [1, 5, 10, 50]; // Les tailles de lot disponibles (1, 5, 10, 50)
+const batchSizes = [1, 5, 10, 50, 100, 200, 500, 1000];
 let batchSize = batchSizes[0]; // Par défaut 1 ligne par paquet
 
 const batchSizeInput = document.getElementById("line-batch-size");

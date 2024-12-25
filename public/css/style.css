@@ -1,12 +1,12 @@
 .console {
-  margin:-45px auto;
+  margin: -45px auto;
 }
 
 #code {
   font-family: monospace;
   color: #F1F1F1;
   background-color: #222222;
-  width: 440em; /* Enlève 'em()' qui est incorrect, utiliser la valeur en pixels ou em directement */
+  width: 440em;
   margin: 4em auto;
   padding: 0.5em;
   border-radius: .25em;
@@ -14,8 +14,8 @@
   word-wrap: break-word;
   counter-reset: line;
   overflow-y: auto;
-  height: 100vh; /* Hauteur dynamique de l'écran */
-  box-sizing: border-box; /* Assurez-vous que padding est inclus dans le calcul de la hauteur */
+  height: 100vh;
+  box-sizing: border-box;
 }
 
 .log-line {
@@ -24,7 +24,7 @@
   margin: 0;
   min-height: 19px;
 }
-  
+
 .log-line:hover {
   background-color: #444;
 }
@@ -51,29 +51,7 @@
   right: 10px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  z-index: 1000;
-}
-
-/* Styles pour les boutons de contrôle */
-.control-buttons {
-  position: fixed;
-  bottom: 10px;
-  right: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px; /* Espacement réduit entre les boutons */
-  z-index: 1000;
-}
-
-/* Styles pour les boutons de contrôle */
-.control-buttons {
-  position: fixed;
-  bottom: 10px;
-  right: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px; /* Espacement réduit entre les boutons */
+  gap: 8px;
   z-index: 1000;
 }
 
@@ -83,9 +61,9 @@
   color: #fff;
   border: none;
   border-radius: 50%;
-  width: 30px; /* Taille réduite des boutons */
-  height: 30px; /* Taille réduite des boutons */
-  font-size: 14px; /* Réduction de la taille de la police */
+  width: 30px;
+  height: 30px;
+  font-size: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -93,27 +71,25 @@
   transition: background-color 0.3s ease, transform 0.3s ease;
 }
 
-/* Survol des boutons to-top et to-bottom */
+/* Survol des boutons */
 .control-buttons .button:hover {
-  background-color: #888; /* Gris clair */
-  transform: scale(1.1); /* Agrandissement au survol */
+  background-color: #888;
+  transform: scale(1.1);
 }
 
 /* Style spécifique au bouton auto-scroll */
 #auto-scroll {
-  background-color: #444; /* Maintenir un fond gris pour le bouton auto-scroll */
+  background-color: #444;
 }
 
 #auto-scroll.active:hover {
-  background-color: #555; /* Une teinte légèrement plus foncée au survol */
+  background-color: #555;
 }
 
-/* Rotation de l'icône pour le bouton auto-scroll actif */
 #auto-scroll.active i {
   animation: rotate 2s linear infinite;
 }
 
-/* Animation de rotation pour l'icône */
 @keyframes rotate {
   0% {
     transform: rotate(0deg);
@@ -124,12 +100,9 @@
 }
 
 /* Styles au survol pour les autres boutons */
-#scroll-to-top:hover {
-  background-color: #888; /* Gris clair */
-}
-
+#scroll-to-top:hover,
 #scroll-to-bottom:hover {
-  background-color: #888; /* Gris clair */
+  background-color: #888;
 }
 
 /* Style du curseur et du label */
@@ -142,4 +115,12 @@
   color: #fff;
   font-size: 12px;
   text-align: center;
+}
+
+/* Positionnement de la barre de défilement */
+#line-batch-size {
+  position: fixed;
+  bottom: 10px;
+  right: 50px; /* Ajustez cette valeur pour positionner la barre à gauche du premier bouton */
+  z-index: 999; /* Assurez-vous que la barre est au-dessus des autres éléments */
 }
