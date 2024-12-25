@@ -1,225 +1,196 @@
-const express = require('express')
-  , http = require('http')
-  , app = express()
-  , cons = require('consolidate')
-  , fs = require('fs')
-  , os = require('os')
-  , util = require('util')
-  , split = require('split')
-  , spawn = require('child_process').spawn
-  , exec = require('child_process').exec
-  , server = http.createServer(app)
-  , subdir = "/" + process.env.SUBDIR
-  , io = require('socket.io').listen(server, {path: subdir + '/socket.io'})
-  , yaml = require('js-yaml')
-  , ini = require('ini')
-  , morgan = require('morgan')
-  , path= require('path')
-  , favicon = require('serve-favicon')
+const express = require('express'),
+      http = require('http'),
+      app = express(),
+      cons = require('consolidate'),
+      fs = require('fs'),
+      os = require('os'),
+      util = require('util'),
+      split = require('split'),
+      spawn = require('child_process').spawn,
+      exec = require('child_process').exec,
+      server = http.createServer(app),
+      subdir = "/" + process.env.SUBDIR,
+      io = require('socket.io').listen(server, { path: subdir + '/socket.io' }),
+      yaml = require('js-yaml'),
+      ini = require('ini'),
+      morgan = require('morgan'),
+      path = require('path'),
+      favicon = require('serve-favicon'),
+      validator = require('validator'); // Pour validation des paramètres
 
-// set subdir
+// Set subdir
 
-// assign the handlebars engine to .html files
-app.engine('html', cons.handlebars)
+// Assign the handlebars engine to .html files
+app.engine('html', cons.handlebars);
 
-// set .html as the default extension
-app.set('view engine', 'html')
-app.set('views', __dirname + '/views/')
+// Set .html as the default extension
+app.set('view engine', 'html');
+app.set('views', __dirname + '/views/');
 
-// declare static ressources in subdir
-app.use(subdir, express.static(path.join(__dirname, '/public')))
+// Declare static resources in subdir
+app.use(subdir, express.static(path.join(__dirname, '/public')));
 
-// serve favicon
-app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')))
+// Serve favicon
+app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 
 // morgan logs
-app.use(morgan('combined'))
+app.use(morgan('combined'));
 
-// read yml config file
-var config = yaml.safeLoad(fs.readFileSync(process.argv[2], 'utf8'));
+// Read YAML config file
+let config;
+try {
+  config = yaml.safeLoad(fs.readFileSync(process.argv[2], 'utf8'));
+} catch (error) {
+  console.error('Error loading YAML config:', error);
+  process.exit(1); // Exit if config can't be loaded
+}
 
-// when query url
-config.forEach(function (cast){
+// Validate parameters function
+const validateParams = (params, req, res) => {
+  const errors = [];
+  params.forEach(param => {
+    // Check if a parameter is missing
+    if (typeof req.query[param] === 'undefined') {
+      errors.push(`Missing "${param}" parameter`);
+    } else if (/[\s;&<>|()/\\!\*\$=+~]/.test(req.query[param])) {
+      // Check if the parameter contains dangerous special characters
+      errors.push(`"${param}" cannot contain special characters`);
+    }
+  });
+  return errors;
+};
 
-    //prepend subdir
-    cast.url = cast.url.replace (/^/,subdir);
+// When query URL
+config.forEach(function (cast) {
 
-    //remove last '/' fix
-    app.get(cast.url.replace(/\/$/, '') , function(req, res) {
-        // Set header for all answers
-        res.setHeader('Content-Type', 'text/plain')
-        var stop = false;
+  // Prepend subdir and remove last '/' fix
+  cast.url = subdir + cast.url.replace(/\/$/, '');
+
+  app.get(cast.url, function (req, res) {
+    // Set header for all answers
+    res.setHeader('Content-Type', 'text/plain');
     
-        // if password set, test it
-        if ((cast.password) && (cast.password != req.query.password)) {
-            res.status(500).send('<span>Missing or wrong password...</span>')
-        } else {
-            //test args
-            if (cast.args){
-                cast_args = []
-                cast.args.forEach(function (arg){
-                    // kill foreach
-                    if (stop) { return; }
-                    
-                    if (typeof req.query[arg] === 'undefined'){
-                        res.status(500).send('<span>Missing "' + arg + '" parameter</span>')
-                        stop = true;       
-                        return;
-                    } else {
-                        // prevent shell injection
-                        if (/[\s;&<>|()/\\!\*\$=+~]/.test(req.query[arg])) {
-                            res.status(500).send('"' + arg + '" cannot contains special chars...')
-                            stop = true;       
-                            return;
-                        } else {
-                            cast_args.push(req.query[arg])
-                        }
-                    }
-                })
-            }
+    // If password is set, test it
+    if (cast.password && cast.password !== req.query.password) {
+      return res.status(403).send('Missing or wrong password...');
+    }
 
-            // render html
-            if (!stop) {
-                res.setHeader('Content-Type', 'text/html')
-                res.render('index', { 
-                    title: cast.name,
-                    subdir: subdir // Passez la variable SUBDIR au template
-                })
-            }
-        }
-    })
+    // Validate parameters
+    const errors = validateParams(cast.args || [], req, res);
+    if (errors.length > 0) {
+      return res.status(400).send(errors.join('<br>')); // Return detailed error message
+    }
 
-    // when query url /plain
-    app.get( cast.url.replace(/\/$/, '') + '/plain' , function(req, res) {
-        // Set header for all answers
-        res.setHeader('Content-Type', 'text/plain')
-        var stop = false;
+    // If everything is valid, send back the HTML page
+    res.setHeader('Content-Type', 'text/html');
+    res.render('index', {
+      title: cast.name,
+      subdir: subdir
+    });
+  });
 
-        if ((cast.password) && (cast.password != req.query.password)) {
-            res.status(500).send('Missing or wrong password...')
-        } else {
-            // test and set args
-            if (cast.args){
-                cast_args = []
-                cast.args.forEach(function (arg){
-                    if (typeof req.query[arg] === 'undefined'){
-                        res.status(500).send('Missing "' + arg + '" parameter')
-                        stop = true;       
-                        return;
-                    } else {
+  // When query URL /plain
+  app.get(cast.url + '/plain', function (req, res) {
+    // Set header for all answers
+    res.setHeader('Content-Type', 'text/plain');
 
-                        // prevent shell injection
-                        if (/[\s;&<>|()/\\!\*\$=+~]/.test(req.query[arg])) {
-                            res.status(500).send('"' + arg + '" cannot contains special chars...')
-                            stop = true;       
-                            return;
-                        } else {
-                            cast_args.push(req.query[arg])
-                        }
-                    }
-                })
-                //substitute '{}' with args
-                var new_cmd_string = cast.cmd.replace(/\{\}/g, '%s');
-                var cmd = util.format(new_cmd_string, ...cast_args);
-            } else {
-                var cmd = cast.cmd
-            }
+    // Password verification
+    if (cast.password && cast.password !== req.query.password) {
+      return res.status(403).send('Incorrect or missing password...');
+    }
 
-            //run
-            if (!stop) {
-                exec(cmd, {maxBuffer: 1024 * 2000}, function(error, stdout, stderr) {
-                    res.send(stdout)
-                })
-            }
-        } 
-    })
-})
+    // Validate parameters
+    const errors = validateParams(cast.args || [], req, res);
+    if (errors.length > 0) {
+      return res.status(400).send(errors.join('<br>')); // Return detailed error message
+    }
 
+    // Build the command with arguments
+    let cmd = cast.cmd;
+    const castArgs = cast.args ? cast.args.map(arg => req.query[arg]) : [];
+
+    // Replace '{}' in the command with actual values from castArgs
+    castArgs.forEach((arg, index) => {
+      cmd = cmd.replace('{}', arg);  // Replace '{}' with the argument in cmd
+    });
+
+    // Execute the command
+    exec(cmd, { maxBuffer: 1024 * 2000 }, (error, stdout, stderr) => {
+      if (error) {
+        console.error('Error executing command:', error);
+        return res.status(500).send(`Error executing command: ${error.message}`);
+      }
+      if (stderr) {
+        console.error('stderr:', stderr);
+        return res.status(500).send(`stderr: ${stderr}`);
+      }
+      res.send(stdout);
+    });
+  });
+});
+
+// Socket.io handling
 io.sockets.on('connection', function (socket) {
-    //console.log('Socket connected.')
-    //console.log(socket.handshake.query)
+  socket.on('init', function (url) {
+    let castArgs = [];
+    let cmdString = '';
+    let castHighlightJson = [];
 
-    //debug
-    //socket.on('log', function(data){
-    //    console.log(data)
-    //})
+    // Find the cast corresponding to the URL
+    const cast = config.find(c => c.url.replace(/\/$/, '') === url.replace(/\/$/, ''));
+    if (cast) {
+      cmdString = cast.cmd;
 
-    socket.on('init', function (url) {
-        //console.log('url: ' + url)
+      // Prepare arguments for the command
+      if (cast.args) {
+        castArgs = cast.args.map(arg => socket.handshake.query[arg]);
+      }
 
-        //match yml and client url
-        config.forEach(function (cast){
-            //remove last '/' fix
-            if (cast.url.replace(/\/$/, '') == url.replace(/\/$/, '')){
-                // get string cmd
-                cmd_string = cast.cmd
-                // get args
-                cast_args = []
-                if (cast.args){
-                    cast.args.forEach(function (arg){
-                        cast_args.push(socket.handshake.query[arg])
-                    })
-                }
-                // get highlight to json
-                if (cast.highlight){
-                    cast_highlight_json = cast.highlight
-                } else {
-                    cast_highlight_json = []
-                }
-            }
-        })
-    
-        //send json highlight -> client
-        socket.emit('highlight', cast_highlight_json)
+      // Load highlights
+      castHighlightJson = cast.highlight || [];
 
-        //replace vars
-        if (cast_args){
-            //substitute '{}' with args
-            var new_cmd_string = cmd_string.replace(/\{\}/g, '%s');
-            var cmd = util.format(new_cmd_string, ...cast_args);
-        }
+      // Send highlights to client
+      socket.emit('highlight', castHighlightJson);
 
-        //format to spawn dict
-        var cmd_list = cmd.split(' ')
-        var cmd_first = cmd_list[0]
-        cmd_list.shift()
-    
-        //run
-        socket.on('run', function () {
-            run = spawn(cmd_first, cmd_list)
-            //on new data
-            //stdout
-            run.stdout.pipe(split()).on('data', (data) => {
-                line = `${data}`
-                //console.log(line)
-                socket.emit('line', line)
-            })
-    
-            //stderr
-            run.stderr.pipe(split()).on('data', (data) => {
-                line = `${data}`
-                //console.log(line)
-                socket.emit('line', line)
-            })
-    
-            //on close
-            run.on('close', function (code) {
-                console.log( 'Cast ' + url + ' exited with code ' + code)
-            })
-        })
-    
-        //on disconnect
-        socket.on('disconnect', function() {
-            run.kill('SIGHUP')
-        })
-    })
-})
+      // Replace '{}' in the command with actual values from castArgs
+      castArgs.forEach((arg, index) => {
+        cmdString = cmdString.replace('{}', arg);  // Replace '{}' with the argument in cmdString
+      });
 
-app.use(function(req, res, next){
-    res.setHeader('Content-Type', 'text/plain')
-    res.status(404).send('<span>Page Introuvable...</span>')
-})
+      const cmdList = cmdString.split(' ');
+      const cmdFirst = cmdList.shift();
 
+      // Execute the command
+      const run = spawn(cmdFirst, cmdList);
+      run.stdout.pipe(split()).on('data', (data) => {
+        socket.emit('line', data.toString());
+      });
+
+      run.stderr.pipe(split()).on('data', (data) => {
+        socket.emit('line', data.toString());
+      });
+
+      run.on('close', function (code) {
+        console.log(`Cast ${url} exited with code ${code}`);
+      });
+
+      // Handle disconnection
+      socket.on('disconnect', function () {
+        run.kill('SIGHUP');
+      });
+    } else {
+      socket.emit('line', 'Error: Cast not found for URL');
+    }
+  });
+});
+
+// Handle 404 errors
+app.use(function (req, res, next) {
+  res.setHeader('Content-Type', 'text/plain');
+  res.status(404).send('<span>Page Not Found...</span>');
+});
+
+// Start the server
 server.listen(process.env.NODE_PORT, () => {
-  console.log('listening on *:' + process.env.NODE_PORT);
+  console.log('Server listening on *:' + process.env.NODE_PORT);
 });
