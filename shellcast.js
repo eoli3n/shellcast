@@ -7,12 +7,10 @@ const express = require('express'),
       util = require('util'),
       split = require('split'),
       spawn = require('child_process').spawn,
-      exec = require('child_process').exec,
       server = http.createServer(app),
       subdir = "/" + process.env.SUBDIR,
       io = require('socket.io').listen(server, { path: subdir + '/socket.io' }),
       yaml = require('js-yaml'),
-      ini = require('ini'),
       morgan = require('morgan'),
       path = require('path'),
       favicon = require('serve-favicon'),
@@ -114,17 +112,29 @@ config.forEach(function (cast) {
       cmd = cmd.replace('{}', arg);  // Replace '{}' with the argument in cmd
     });
 
-    // Execute the command
-    exec(cmd, { maxBuffer: 1024 * 2000 }, (error, stdout, stderr) => {
-      if (error) {
-        console.error('Error executing command:', error);
-        return res.status(500).send(`Error executing command: ${error.message}`);
-      }
-      if (stderr) {
-        console.error('stderr:', stderr);
-        return res.status(500).send(`stderr: ${stderr}`);
-      }
-      res.send(stdout);
+    // Log the final command for debugging
+    //console.log('Final command:', cmd);
+
+    // Execute the command using spawn
+    const cmdList = cmd.split(' ');
+    const cmdFirst = cmdList.shift(); // Extract the first part of the command (e.g., script path)
+    
+    // Ensure the script path is correct and doesn't include placeholders
+    const run = spawn(cmdFirst, cmdList);
+
+    // Pipe the output of the command to the response
+    run.stdout.pipe(res);
+    run.stderr.pipe(res);
+
+    // Handle errors
+    run.on('error', (error) => {
+      console.error('Error spawning process:', error);
+      res.status(500).send(`Error spawning process: ${error.message}`);
+    });
+
+    // Handle process exit
+    run.on('close', function (code) {
+      console.log(`Cast ${cast.url} exited with code ${code}`);
     });
   });
 });
@@ -158,9 +168,12 @@ io.sockets.on('connection', function (socket) {
       });
 
       const cmdList = cmdString.split(' ');
-      const cmdFirst = cmdList.shift();
+      const cmdFirst = cmdList.shift(); // Extract the first part of the command (e.g., script path)
 
-      // Execute the command
+      // Log the final command for debugging
+      //console.log('Final command:', cmdString);
+
+      // Execute the command using spawn
       const run = spawn(cmdFirst, cmdList);
       run.stdout.pipe(split()).on('data', (data) => {
         socket.emit('line', data.toString());
