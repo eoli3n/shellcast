@@ -199,7 +199,7 @@ io.sockets.on('connection', function (socket) {
 
       // Handle disconnection
       socket.on('disconnect', function () {
-        run.kill('SIGHUP');
+        if (run) run.kill('SIGTERM');
       });
     } else {
       socket.emit('line', 'Error: Cast not found for URL');
