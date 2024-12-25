@@ -16,6 +16,11 @@ const express = require('express'),
       favicon = require('serve-favicon'),
       validator = require('validator'); // Pour validation des paramètres
 
+// Fonction d'échappement des arguments (sans ajouter de guillemets)
+const escapeArgument = (arg) => {
+  return arg.replace(/(["`$\\!&*()|;<>?^])/g, '\\$1');
+};
+
 // Set subdir
 
 // Assign the handlebars engine to .html files
@@ -107,14 +112,17 @@ config.forEach(function (cast) {
     let cmd = cast.cmd;
     const castArgs = cast.args ? cast.args.map(arg => req.query[arg]) : [];
 
+    // Escape all arguments without adding quotes
+    const escapedArgs = castArgs.map(arg => escapeArgument(arg));
+
     // Replace the arguments in the command
-    castArgs.forEach((arg, index) => {
+    escapedArgs.forEach((escapedArg, index) => {
       const placeholder = `{${cast.args[index]}}`; // Match the argument placeholder (e.g., {hostname}, {ip}, etc.)
-      cmd = cmd.split(placeholder).join(arg);  // Replace all instances of the placeholder with the actual argument value
+      cmd = cmd.split(placeholder).join(escapedArg);  // Replace all instances of the placeholder with the actual escaped argument value
     });
 
     // Log the final command for debugging
-    //console.log('Final command:', cmd);
+    console.log('Final command:', cmd);
 
     // Execute the command using spawn
     const cmdList = cmd.split(' ');
@@ -163,17 +171,20 @@ io.sockets.on('connection', function (socket) {
       // Send highlights to client
       socket.emit('highlight', castHighlightJson);
 
+      // Escape all arguments without adding quotes
+      const escapedArgs = castArgs.map(arg => escapeArgument(arg));
+
       // Replace the arguments in the command
-      castArgs.forEach((arg, index) => {
+      escapedArgs.forEach((escapedArg, index) => {
         const placeholder = `{${cast.args[index]}}`; // Match the argument placeholder (e.g., {hostname}, {ip}, etc.)
-        cmdString = cmdString.split(placeholder).join(arg);  // Replace all instances of the placeholder with the actual argument value
+        cmdString = cmdString.split(placeholder).join(escapedArg);  // Replace all instances of the placeholder with the actual escaped argument value
       });
 
       const cmdList = cmdString.split(' ');
       const cmdFirst = cmdList.shift(); // Extract the first part of the command (e.g., script path)
 
       // Log the final command for debugging
-      //console.log('Final command:', cmdString);
+      console.log('Final command:', cmdString);
 
       // Execute the command using spawn
       const run = spawn(cmdFirst, cmdList);
