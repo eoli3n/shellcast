@@ -131,3 +131,15 @@
 #scroll-to-bottom:hover {
   background-color: #888; /* Gris clair */
 }
+
+/* Style du curseur et du label */
+.control-buttons input[type="range"] {
+  width: 100px;
+  margin-top: 10px;
+}
+
+.control-buttons label {
+  color: #fff;
+  font-size: 12px;
+  text-align: center;
+}

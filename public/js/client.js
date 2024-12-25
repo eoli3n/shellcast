@@ -89,12 +89,25 @@ const createLine = (data) => {
     return lineDiv
 }
 
+// Gestion du curseur de taille de paquet
+const batchSizes = [1, 5, 10, 50]; // Les tailles de lot disponibles (1, 5, 10, 50)
+let batchSize = batchSizes[0]; // Par défaut 1 ligne par paquet
+
+const batchSizeInput = document.getElementById("line-batch-size");
+const batchLabel = document.getElementById("batch-label");
+
+batchSizeInput.addEventListener("input", () => {
+    batchSize = batchSizes[batchSizeInput.value - 1]; // Mettre à jour la taille du paquet
+    batchLabel.textContent = `${batchSize} ligne${batchSize > 1 ? 's' : ''}`; // Mettre à jour l'étiquette
+    processLines(); // Reprend le traitement avec la nouvelle taille de paquet
+});
+
 // Traitement des lignes optimisé
 const processLines = () => {
     if (isProcessing) return
     isProcessing = true
 
-    const processNextLine = () => {
+    const processNextLines = () => {
         if (lineBuffer.length === 0) {
             if (finishedProcessing) {
                 // Si nous avons fini et qu'il y a 2 lignes vides à la fin, on les retire
@@ -107,28 +120,32 @@ const processLines = () => {
             return
         }
 
-        const line = lineBuffer.shift().trim();
-        if (line.length === 0) {
-            // Ignore empty lines except for the last two
-            return processNextLine()
+        // Traiter un lot de lignes selon la taille du paquet
+        const linesToProcess = lineBuffer.splice(0, batchSize);
+        const fragment = document.createDocumentFragment();
+
+        linesToProcess.forEach((line) => {
+            if (line.trim().length === 0) return;
+            fragment.appendChild(createLine(line.trim()));
+        });
+
+        document.getElementById('code').appendChild(fragment);
+        smartScroll();
+
+        if (lineBuffer.length > 0) {
+            requestAnimationFrame(processNextLines); // Continuer à traiter si des lignes restent
+        } else {
+            isProcessing = false;
         }
-
-        const fragment = document.createDocumentFragment()
-        fragment.appendChild(createLine(line))
-
-        document.getElementById('code').appendChild(fragment)
-        smartScroll()
-
-        requestAnimationFrame(processNextLine)
     }
 
-    requestAnimationFrame(processNextLine)
+    requestAnimationFrame(processNextLines); // Demander au navigateur de traiter les lignes
 }
 
 // Réception des lignes
 socket.on('line', (data) => {
     lineBuffer.push(data)
-    processLines()
+    processLines() // Traiter les lignes dès qu'une nouvelle ligne est reçue
 })
 
 // Réception de la déconnexion
