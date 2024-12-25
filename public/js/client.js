@@ -1,4 +1,3 @@
-// Cache des expressions régulières
 const regexCache = new Map()
 
 // Buffer pour l'affichage des lignes
@@ -131,3 +130,36 @@ socket.on('disconnect', () => {
 window.addEventListener('beforeunload', () => {
     socket.close()
 })
+
+document.addEventListener("DOMContentLoaded", () => {
+    const codeElement = document.getElementById("code");
+    const autoScrollButton = document.getElementById("auto-scroll");
+    const scrollToTopButton = document.getElementById("scroll-to-top");
+    const scrollToBottomButton = document.getElementById("scroll-to-bottom");
+    let autoScrollEnabled = true;
+
+    // Toggle auto-scroll
+    autoScrollButton.addEventListener("click", () => {
+        autoScrollEnabled = !autoScrollEnabled;
+        autoScrollButton.classList.toggle("active", autoScrollEnabled);
+    });
+
+    // Scroll to top
+    scrollToTopButton.addEventListener("click", () => {
+        codeElement.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    // Scroll to bottom
+    scrollToBottomButton.addEventListener("click", () => {
+        codeElement.scrollTo({ top: codeElement.scrollHeight, behavior: "smooth" });
+    });
+
+    // Auto-scroll functionality
+    const observer = new MutationObserver(() => {
+        if (autoScrollEnabled) {
+            codeElement.scrollTop = codeElement.scrollHeight;
+        }
+    });
+
+    observer.observe(codeElement, { childList: true, subtree: true });
+});

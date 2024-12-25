@@ -6,17 +6,16 @@
   font-family: monospace;
   color: #F1F1F1;
   background-color: #222222;
-  width: em(440);
+  width: 440em; /* Enlève 'em()' qui est incorrect, utiliser la valeur en pixels ou em directement */
   margin: 4em auto;
   padding: 0.5em;
   border-radius: .25em;
   white-space: pre-wrap;
-  white-space: -moz-pre-wrap;
-  white-space: -pre-wrap;
-  white-space: -o-pre-wrap;
-  word-wrap: break-word;     
+  word-wrap: break-word;
   counter-reset: line;
   overflow-y: auto;
+  height: 100vh; /* Hauteur dynamique de l'écran */
+  box-sizing: border-box; /* Assurez-vous que padding est inclus dans le calcul de la hauteur */
 }
 
 .log-line {
@@ -45,38 +44,90 @@
   padding-right: 1em;
 }
 
-.to-top {
-  margin-right: 2px;
-  padding-right: 50px; 
-  color: #000;
-  text-decoration: none;
-  background: url('../png/totop.png') no-repeat;
+/* Styles pour les boutons de contrôle */
+.control-buttons {
   position: fixed;
-  top: 90%;
-  right: 40px;
-  display: none;
+  bottom: 10px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1000;
 }
 
-.to-bottom {
-  margin-right: 2px;
-  padding-right: 50px; 
-  color: #000;
-  text-decoration: none;
-  background: url('../png/tobottom.png') no-repeat;
+/* Styles pour les boutons de contrôle */
+.control-buttons {
   position: fixed;
-  top: 90%;
-  right: 100px;
-  display: none;
+  bottom: 10px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px; /* Espacement réduit entre les boutons */
+  z-index: 1000;
 }
 
-.to-top:hover{
-  text-decoration:none;
-  background: url('../png/totop-hover.png') no-repeat;
-  display: none;
+/* Styles pour les boutons de contrôle */
+.control-buttons {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px; /* Espacement réduit entre les boutons */
+  z-index: 1000;
 }
 
-.to-bottom:hover{
-  text-decoration:none;
-  background: url('../png/tobottom-hover.png') no-repeat;
-  display: none;
+/* Style de base pour les boutons */
+.control-buttons .button {
+  background-color: #444;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 30px; /* Taille réduite des boutons */
+  height: 30px; /* Taille réduite des boutons */
+  font-size: 14px; /* Réduction de la taille de la police */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+/* Survol des boutons to-top et to-bottom */
+.control-buttons .button:hover {
+  background-color: #888; /* Gris clair */
+  transform: scale(1.1); /* Agrandissement au survol */
+}
+
+/* Style spécifique au bouton auto-scroll */
+#auto-scroll {
+  background-color: #444; /* Maintenir un fond gris pour le bouton auto-scroll */
+}
+
+#auto-scroll.active:hover {
+  background-color: #555; /* Une teinte légèrement plus foncée au survol */
+}
+
+/* Rotation de l'icône pour le bouton auto-scroll actif */
+#auto-scroll.active i {
+  animation: rotate 2s linear infinite;
+}
+
+/* Animation de rotation pour l'icône */
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Styles au survol pour les autres boutons */
+#scroll-to-top:hover {
+  background-color: #888; /* Gris clair */
+}
+
+#scroll-to-bottom:hover {
+  background-color: #888; /* Gris clair */
 }
