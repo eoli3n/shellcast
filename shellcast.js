@@ -9,7 +9,8 @@ const express = require('express'),
       spawn = require('child_process').spawn,
       server = http.createServer(app),
       subdir = "/" + process.env.SUBDIR,
-      io = require('socket.io').listen(server, { path: subdir + '/socket.io' }),
+      { Server } = require('socket.io'),  // Utilisation du constructeur Server
+      io = new Server(server, { path: subdir + '/socket.io' }),  // Instanciation avec Server
       yaml = require('js-yaml'),
       morgan = require('morgan'),
       path = require('path'),
@@ -139,9 +140,9 @@ config.forEach(function (cast) {
     });
 
     // Handle process exit
-    run.on('close', function (code) {
-      console.log(`Cast ${cast.url} exited with code ${code}`);
-    });
+    //run.on('close', function (code) {
+    //  console.log(`Cast ${cast.url} exited with code ${code}`);
+    //});
   });
 });
 
@@ -193,9 +194,9 @@ io.sockets.on('connection', function (socket) {
         socket.emit('line', data.toString());
       });
 
-      run.on('close', function (code) {
-        console.log(`Cast ${url} exited with code ${code}`);
-      });
+      //run.on('close', function (code) {
+      //  console.log(`Cast ${url} exited with code ${code}`);
+      //});
 
       // Handle disconnection
       socket.on('disconnect', function () {
