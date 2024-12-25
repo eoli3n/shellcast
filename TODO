@@ -1,3 +1,2 @@
-- tester plusieurs instances ?
-- est-ce que fermer la page arrête la commande ansible ?
-- utiliser sessions middleware ? https://github.com/expressjs/session
+- migrer vers websocket ?
+- continuer à recevoir les lignes en arrière plan quand l'onglet n'est pas focus
