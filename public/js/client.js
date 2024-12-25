@@ -169,7 +169,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Scroll to bottom
     scrollToBottomButton.addEventListener("click", () => {
-        codeElement.scrollTo({ top: codeElement.scrollHeight, behavior: "smooth" });
+        codeElement.scrollTop = codeElement.scrollHeight;
     });
 
     // Auto-scroll functionality

@@ -122,7 +122,7 @@ config.forEach(function (cast) {
     });
 
     // Log the final command for debugging
-    console.log('Final command:', cmd);
+    //console.log('Final command:', cmd);
 
     // Execute the command using spawn
     const cmdList = cmd.split(' ');
@@ -184,7 +184,7 @@ io.sockets.on('connection', function (socket) {
       const cmdFirst = cmdList.shift(); // Extract the first part of the command (e.g., script path)
 
       // Log the final command for debugging
-      console.log('Final command:', cmdString);
+      //console.log('Final command:', cmdString);
 
       // Execute the command using spawn
       const run = spawn(cmdFirst, cmdList);
