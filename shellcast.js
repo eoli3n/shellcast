@@ -67,6 +67,11 @@ config.forEach(function (cast) {
   cast.url = subdir + cast.url.replace(/\/$/, '');
 
   app.get(cast.url, function (req, res) {
+    // Log the requested script and arguments
+    console.log(`---`);
+    console.log(`Requested script: ${cast.cmd}`);
+    console.log(`Arguments: ${JSON.stringify(req.query)}`);
+    
     // Set header for all answers
     res.setHeader('Content-Type', 'text/plain');
     
@@ -91,6 +96,11 @@ config.forEach(function (cast) {
 
   // When query URL /plain
   app.get(cast.url + '/plain', function (req, res) {
+    // Log the requested script and arguments
+    console.log(`---`);
+    console.log(`Requested script: ${cast.cmd}`);
+    console.log(`Arguments: ${JSON.stringify(req.query)}`);
+
     // Set header for all answers
     res.setHeader('Content-Type', 'text/plain');
 
@@ -120,7 +130,7 @@ config.forEach(function (cast) {
     });
 
     // Log the final command for debugging
-    //console.log('Final command:', cmd);
+    console.log('Final command:', cmd);
 
     // Execute the command using spawn
     const cmdList = cmd.split(' ');
@@ -140,9 +150,9 @@ config.forEach(function (cast) {
     });
 
     // Handle process exit
-    //run.on('close', function (code) {
-    //  console.log(`Cast ${cast.url} exited with code ${code}`);
-    //});
+    run.on('close', function (code) {
+      console.log(`Cast ${cast.url} exited with code ${code}`);
+    });
   });
 });
 
@@ -182,7 +192,7 @@ io.sockets.on('connection', function (socket) {
       const cmdFirst = cmdList.shift(); // Extract the first part of the command (e.g., script path)
 
       // Log the final command for debugging
-      //console.log('Final command:', cmdString);
+      console.log('Final command:', cmdString);
 
       // Execute the command using spawn
       const run = spawn(cmdFirst, cmdList);
@@ -194,9 +204,9 @@ io.sockets.on('connection', function (socket) {
         socket.emit('line', data.toString());
       });
 
-      //run.on('close', function (code) {
-      //  console.log(`Cast ${url} exited with code ${code}`);
-      //});
+      run.on('close', function (code) {
+        console.log(`Cast ${url} exited with code ${code}`);
+      });
 
       // Handle disconnection
       socket.on('disconnect', function () {
