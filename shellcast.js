@@ -14,12 +14,8 @@ const express = require('express'),
       morgan = require('morgan'),
       path = require('path'),
       favicon = require('serve-favicon'),
+      shellEscape = require('shell-escape'),
       validator = require('validator'); // Pour validation des paramètres
-
-// Fonction d'échappement des arguments (sans ajouter de guillemets)
-const escapeArgument = (arg) => {
-  return arg.replace(/(["`$\\!&*()|;<>?^])/g, '\\$1');
-};
 
 // Set subdir
 
@@ -112,11 +108,12 @@ config.forEach(function (cast) {
     let cmd = cast.cmd;
     const castArgs = cast.args ? cast.args.map(arg => req.query[arg]) : [];
 
-    // Escape all arguments without adding quotes
-    const escapedArgs = castArgs.map(arg => escapeArgument(arg));
+    // Escape all arguments using shell-escape and remove single quotes
+    let escapedArgs = castArgs.map(arg => shellEscape([arg]));
+    escapedArgs = escapedArgs.map(arg => arg.replace(/^'(.*)'$/, '$1')).join(' ');  // Remove surrounding single quotes
 
     // Replace the arguments in the command
-    escapedArgs.forEach((escapedArg, index) => {
+    escapedArgs.split(' ').forEach((escapedArg, index) => {
       const placeholder = `{${cast.args[index]}}`; // Match the argument placeholder (e.g., {hostname}, {ip}, etc.)
       cmd = cmd.split(placeholder).join(escapedArg);  // Replace all instances of the placeholder with the actual escaped argument value
     });
@@ -172,7 +169,7 @@ io.sockets.on('connection', function (socket) {
       socket.emit('highlight', castHighlightJson);
 
       // Escape all arguments without adding quotes
-      const escapedArgs = castArgs.map(arg => escapeArgument(arg));
+      const escapedArgs = castArgs.map(arg => shellEscape([arg])).map(arg => arg.replace(/^'(.*)'$/, '$1'));
 
       // Replace the arguments in the command
       escapedArgs.forEach((escapedArg, index) => {
