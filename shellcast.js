@@ -50,7 +50,7 @@ const validateParams = (params, req, res) => {
     // Check if a parameter is missing
     if (typeof req.query[param] === 'undefined') {
       errors.push(`Missing "${param}" parameter`);
-    } else if (/[\s;&<>|()/\\!\*\$=+~]/.test(req.query[param])) {
+    } else if (/[\;&<>|()/\\!*\$=+~]/.test(req.query[param])) {
       // Check if the parameter contains dangerous special characters
       errors.push(`"${param}" cannot contain special characters`);
     }
@@ -107,9 +107,10 @@ config.forEach(function (cast) {
     let cmd = cast.cmd;
     const castArgs = cast.args ? cast.args.map(arg => req.query[arg]) : [];
 
-    // Replace '{}' in the command with actual values from castArgs
+    // Replace the arguments in the command
     castArgs.forEach((arg, index) => {
-      cmd = cmd.replace('{}', arg);  // Replace '{}' with the argument in cmd
+      const placeholder = `{${cast.args[index]}}`; // Match the argument placeholder (e.g., {hostname}, {ip}, etc.)
+      cmd = cmd.split(placeholder).join(arg);  // Replace all instances of the placeholder with the actual argument value
     });
 
     // Log the final command for debugging
@@ -118,7 +119,7 @@ config.forEach(function (cast) {
     // Execute the command using spawn
     const cmdList = cmd.split(' ');
     const cmdFirst = cmdList.shift(); // Extract the first part of the command (e.g., script path)
-    
+
     // Ensure the script path is correct and doesn't include placeholders
     const run = spawn(cmdFirst, cmdList);
 
@@ -162,9 +163,10 @@ io.sockets.on('connection', function (socket) {
       // Send highlights to client
       socket.emit('highlight', castHighlightJson);
 
-      // Replace '{}' in the command with actual values from castArgs
+      // Replace the arguments in the command
       castArgs.forEach((arg, index) => {
-        cmdString = cmdString.replace('{}', arg);  // Replace '{}' with the argument in cmdString
+        const placeholder = `{${cast.args[index]}}`; // Match the argument placeholder (e.g., {hostname}, {ip}, etc.)
+        cmdString = cmdString.split(placeholder).join(arg);  // Replace all instances of the placeholder with the actual argument value
       });
 
       const cmdList = cmdString.split(' ');

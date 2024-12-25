@@ -43,7 +43,7 @@
   password: suburlpass
   # Get /args/test/plain?hostname=foo&ip=192.168.0.1&mac=00:11:22:33:44:55&password=suburlpass
   # will be run as "./tests/args.sh foo 192.168.0.1 00:11:22:33:44:55"
-  cmd: ./tests/args.sh {} {} {}
+  cmd: ./tests/args.sh {hostname} {ip} {mac}
   args:
     - hostname
     - ip
