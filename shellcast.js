@@ -9,222 +9,206 @@ const express = require('express'),
       spawn = require('child_process').spawn,
       server = http.createServer(app),
       subdir = "/" + process.env.SUBDIR,
-      { Server } = require('socket.io'),  // Utilisation du constructeur Server
-      io = new Server(server, { path: subdir + '/socket.io' }),  // Instanciation avec Server
+      { Server } = require('socket.io'),
+      io = new Server(server, { path: subdir + '/socket.io' }),
       yaml = require('js-yaml'),
       morgan = require('morgan'),
       path = require('path'),
       favicon = require('serve-favicon'),
       shellEscape = require('shell-escape'),
-      validator = require('validator'); // Pour validation des paramètres
+      validator = require('validator');
 
-// Set subdir
-
-// Assign the handlebars engine to .html files
+// Set up view engine and static resources
 app.engine('html', cons.handlebars);
-
-// Set .html as the default extension
 app.set('view engine', 'html');
 app.set('views', __dirname + '/views/');
-
-// Declare static resources in subdir
 app.use(subdir, express.static(path.join(__dirname, '/public')));
-
-// Serve favicon
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
-
-// morgan logs
 app.use(morgan('combined'));
 
-// Read YAML config file
+// Load YAML config
 let config;
 try {
-  config = yaml.safeLoad(fs.readFileSync(process.argv[2], 'utf8'));
+    config = yaml.safeLoad(fs.readFileSync(process.argv[2], 'utf8'));
 } catch (error) {
-  console.error('Error loading YAML config:', error);
-  process.exit(1); // Exit if config can't be loaded
+    console.error('Error loading YAML config:', error);
+    process.exit(1);
 }
 
-// Validate parameters function
+// Validate parameters
 const validateParams = (params, req, res) => {
-  const errors = [];
-  params.forEach(param => {
-    // Check if a parameter is missing
-    if (typeof req.query[param] === 'undefined') {
-      errors.push(`Missing "${param}" parameter`);
-    } else if (/[\;&<>|()/\\!*\$=+~]/.test(req.query[param])) {
-      // Check if the parameter contains dangerous special characters
-      errors.push(`"${param}" cannot contain special characters`);
-    }
-  });
-  return errors;
+    const errors = [];
+    params.forEach(param => {
+        if (typeof req.query[param] === 'undefined') {
+            errors.push(`Missing "${param}" parameter`);
+        } else if (/[\;&<>|()/\\!*\$=+~]/.test(req.query[param])) {
+            errors.push(`"${param}" cannot contain special characters`);
+        }
+    });
+    return errors;
 };
 
-// When query URL
-config.forEach(function (cast) {
-
-  // Prepend subdir and remove last '/' fix
-  cast.url = subdir + cast.url.replace(/\/$/, '');
-
-  app.get(cast.url, function (req, res) {
-    // Log the requested script and arguments
-    console.log(`---`);
-    console.log(`Requested script: ${cast.cmd}`);
-    console.log(`Arguments: ${JSON.stringify(req.query)}`);
-    
-    // Set header for all answers
-    res.setHeader('Content-Type', 'text/plain');
-    
-    // If password is set, test it
-    if (cast.password && cast.password !== req.query.password) {
-      return res.status(403).send('Missing or wrong password...');
-    }
-
-    // Validate parameters
-    const errors = validateParams(cast.args || [], req, res);
-    if (errors.length > 0) {
-      return res.status(400).send(errors.join('<br>')); // Return detailed error message
-    }
-
-    // If everything is valid, send back the HTML page
-    res.setHeader('Content-Type', 'text/html');
-    res.render('index', {
-      title: cast.name,
-      subdir: subdir
-    });
-  });
-
-  // When query URL /plain
-  app.get(cast.url + '/plain', function (req, res) {
-    // Log the requested script and arguments
-    console.log(`---`);
-    console.log(`Requested script: ${cast.cmd}`);
-    console.log(`Arguments: ${JSON.stringify(req.query)}`);
-
-    // Set header for all answers
-    res.setHeader('Content-Type', 'text/plain');
-
-    // Password verification
-    if (cast.password && cast.password !== req.query.password) {
-      return res.status(403).send('Incorrect or missing password...');
-    }
-
-    // Validate parameters
-    const errors = validateParams(cast.args || [], req, res);
-    if (errors.length > 0) {
-      return res.status(400).send(errors.join('<br>')); // Return detailed error message
-    }
-
-    // Build the command with arguments
-    let cmd = cast.cmd;
-    const castArgs = cast.args ? cast.args.map(arg => req.query[arg]) : [];
-
-    // Escape all arguments using shell-escape and remove single quotes
-    let escapedArgs = castArgs.map(arg => shellEscape([arg]));
-    escapedArgs = escapedArgs.map(arg => arg.replace(/^'(.*)'$/, '$1')).join(' ');  // Remove surrounding single quotes
-
-    // Replace the arguments in the command
-    escapedArgs.split(' ').forEach((escapedArg, index) => {
-      const placeholder = `{${cast.args[index]}}`; // Match the argument placeholder (e.g., {hostname}, {ip}, etc.)
-      cmd = cmd.split(placeholder).join(escapedArg);  // Replace all instances of the placeholder with the actual escaped argument value
-    });
-
-    // Log the final command for debugging
-    console.log('Final command:', cmd);
-
-    // Execute the command using spawn
-    const cmdList = cmd.split(' ');
-    const cmdFirst = cmdList.shift(); // Extract the first part of the command (e.g., script path)
-
-    // Ensure the script path is correct and doesn't include placeholders
-    const run = spawn(cmdFirst, cmdList);
-
-    // Pipe the output of the command to the response
-    run.stdout.pipe(res);
-    run.stderr.pipe(res);
-
-    // Handle errors
-    run.on('error', (error) => {
-      console.error('Error spawning process:', error);
-      res.status(500).send(`Error spawning process: ${error.message}`);
-    });
-
-    // Handle process exit
-    run.on('close', function (code) {
-      console.log(`Cast ${cast.url} exited with code ${code}`);
-    });
-  });
-});
+// Buffer for storing lines per client
+const clientBuffers = new Map();
 
 // Socket.io handling
-io.sockets.on('connection', function (socket) {
-  socket.on('init', function (url) {
-    let castArgs = [];
-    let cmdString = '';
-    let castHighlightJson = [];
+io.sockets.on('connection', (socket) => {
+    const clientId = socket.id;
+    clientBuffers.set(clientId, []); // Initialize buffer for this client
+    
+    //console.log(`Client ${clientId} connected.`);
 
-    // Find the cast corresponding to the URL
-    const cast = config.find(c => c.url.replace(/\/$/, '') === url.replace(/\/$/, ''));
-    if (cast) {
-      cmdString = cast.cmd;
+    socket.on('init', (url) => {
+        let castArgs = [];
+        let cmdString = '';
+        let castHighlightJson = [];
+        
+        // Find the cast corresponding to the URL
+        const cast = config.find(c => c.url.replace(/\/$/, '') === url.replace(/\/$/, ''));
+        
+        if (cast) {
+            cmdString = cast.cmd;
+            // Prepare arguments for the command
+            if (cast.args) {
+                castArgs = cast.args.map(arg => socket.handshake.query[arg]);
+            }
+            // Load highlights
+            castHighlightJson = cast.highlight || [];
+            // Send highlights to client
+            socket.emit('highlight', castHighlightJson);
 
-      // Prepare arguments for the command
-      if (cast.args) {
-        castArgs = cast.args.map(arg => socket.handshake.query[arg]);
-      }
+            const escapedArgs = castArgs.map(arg => shellEscape([arg]).replace(/^'(.*)'$/, '$1'));
+            escapedArgs.forEach((escapedArg, index) => {
+                const placeholder = `{${cast.args[index]}}`;
+                cmdString = cmdString.split(placeholder).join(escapedArg);
+            });
 
-      // Load highlights
-      castHighlightJson = cast.highlight || [];
+            const cmdList = cmdString.split(' ');
+            const cmdFirst = cmdList.shift();
 
-      // Send highlights to client
-      socket.emit('highlight', castHighlightJson);
+            console.log('Final command:', cmdString);
+            //console.log('Sending highlight config:', castHighlightJson);
 
-      // Escape all arguments without adding quotes
-      const escapedArgs = castArgs.map(arg => shellEscape([arg])).map(arg => arg.replace(/^'(.*)'$/, '$1'));
+            const run = spawn(cmdFirst, cmdList);
 
-      // Replace the arguments in the command
-      escapedArgs.forEach((escapedArg, index) => {
-        const placeholder = `{${cast.args[index]}}`; // Match the argument placeholder (e.g., {hostname}, {ip}, etc.)
-        cmdString = cmdString.split(placeholder).join(escapedArg);  // Replace all instances of the placeholder with the actual escaped argument value
-      });
+            run.stdout.pipe(split()).on('data', (data) => {
+                const line = data.toString();
+                //console.log('Line from stdout:', line);
 
-      const cmdList = cmdString.split(' ');
-      const cmdFirst = cmdList.shift(); // Extract the first part of the command (e.g., script path)
+                if (!socket.focus) {
+                    //console.log(`Buffering line for ${clientId}:`, line);
+                    clientBuffers.get(clientId).push(line);
+                } else {
+                    //console.log(`Sending line to ${clientId}:`, line);
+                    socket.emit('line', line);
+                }
+            });
 
-      // Log the final command for debugging
-      console.log('Final command:', cmdString);
+            run.stderr.pipe(split()).on('data', (data) => {
+                const line = data.toString();
+                //console.log('Line from stderr:', line);
 
-      // Execute the command using spawn
-      const run = spawn(cmdFirst, cmdList);
-      run.stdout.pipe(split()).on('data', (data) => {
-        socket.emit('line', data.toString());
-      });
+                if (!socket.focus) {
+                    //console.log(`Buffering stderr line for ${clientId}:`, line);
+                    clientBuffers.get(clientId).push(line);
+                } else {
+                    //console.log(`Sending stderr line to ${clientId}:`, line);
+                    socket.emit('line', line);
+                }
+            });
 
-      run.stderr.pipe(split()).on('data', (data) => {
-        socket.emit('line', data.toString());
-      });
+            run.on('close', (code) => {
+                console.log(`Command ${cmdString} exited with code ${code}`);
+            });
 
-      run.on('close', function (code) {
-        console.log(`Cast ${url} exited with code ${code}`);
-      });
+            socket.on('disconnect', () => {
+                //console.log(`Client ${clientId} disconnected.`);
+                if (run) run.kill('SIGTERM');
+                clientBuffers.delete(clientId);
+            });
+        } else {
+            socket.emit('line', 'Error: Cast not found for URL');
+        }
+    });
 
-      // Handle disconnection
-      socket.on('disconnect', function () {
-        if (run) run.kill('SIGTERM');
-      });
-    } else {
-      socket.emit('line', 'Error: Cast not found for URL');
-    }
-  });
+    socket.on('focus', () => {
+        //console.log(`Client ${clientId} is now focused.`);
+        const buffer = clientBuffers.get(clientId) || [];
+        if (buffer.length > 0) {
+            //console.log(`Sending buffered lines to ${clientId}:`, buffer);
+            socket.emit('lines', buffer); // Send buffered lines to the client
+            clientBuffers.set(clientId, []); // Clear buffer after sending
+        }
+        socket.focus = true;
+    });
+
+    socket.on('blur', () => {
+        //console.log(`Client ${clientId} is now blurred.`);
+        socket.focus = false;
+    });
+});
+
+// Handle HTTP requests
+config.forEach((cast) => {
+    cast.url = subdir + cast.url.replace(/\/$/, '');
+    
+    app.get(cast.url, (req, res) => {
+        res.setHeader('Content-Type', 'text/plain');
+        if (cast.password && cast.password !== req.query.password) {
+            return res.status(403).send('Missing or wrong password...');
+        }
+        const errors = validateParams(cast.args || [], req, res);
+        if (errors.length > 0) {
+            return res.status(400).send(errors.join('<br>'));
+        }
+        res.setHeader('Content-Type', 'text/html');
+        res.render('index', { title: cast.name, subdir: subdir });
+    });
+
+    app.get(cast.url + '/plain', (req, res) => {
+        res.setHeader('Content-Type', 'text/plain');
+        if (cast.password && cast.password !== req.query.password) {
+            return res.status(403).send('Incorrect or missing password...');
+        }
+        const errors = validateParams(cast.args || [], req, res);
+        if (errors.length > 0) {
+            return res.status(400).send(errors.join('<br>'));
+        }
+
+        let cmd = cast.cmd;
+        const castArgs = cast.args ? cast.args.map(arg => req.query[arg]) : [];
+        const escapedArgs = castArgs.map(arg => shellEscape([arg]).replace(/^'(.*)'$/, '$1')).join(' ');
+        
+        escapedArgs.split(' ').forEach((escapedArg, index) => {
+            const placeholder = `{${cast.args[index]}}`;
+            cmd = cmd.split(placeholder).join(escapedArg);
+        });
+
+        const cmdList = cmd.split(' ');
+        const cmdFirst = cmdList.shift();
+        const run = spawn(cmdFirst, cmdList);
+        
+        run.stdout.pipe(res);
+        run.stderr.pipe(res);
+        
+        run.on('error', (error) => {
+            console.error('Error spawning process:', error);
+            res.status(500).send(`Error spawning process: ${error.message}`);
+        });
+        
+        run.on('close', (code) => {
+            console.log(`Command ${cmd} exited with code ${code}`);
+        });
+    });
 });
 
 // Handle 404 errors
-app.use(function (req, res, next) {
-  res.setHeader('Content-Type', 'text/plain');
-  res.status(404).send('<span>Page Not Found...</span>');
+app.use((req, res) => {
+    res.setHeader('Content-Type', 'text/plain');
+    res.status(404).send('Page Not Found...');
 });
 
 // Start the server
 server.listen(process.env.NODE_PORT, () => {
-  console.log('Server listening on *:' + process.env.NODE_PORT);
+    console.log('Server listening on *:' + process.env.NODE_PORT);
 });
