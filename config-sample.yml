@@ -1,9 +1,9 @@
+---
 - name: Help
   description: "Help page display this file"
   url: /help
-  cmd: tail -n+6 config.yml
+  cmd: bat --plain --color always config.yml
 
-# Test url : http://localhost:8080/rainbow
 - name: Rainbow
   description: "Test word highlights and stream"
   url: /rainbow
@@ -12,14 +12,14 @@
   # 'class' could be any class define in public/css/custom.css
   highlight:
     # 'word' highlight only matching word
-    - word: 'green'
+    - word: '^[0-9]+'
       class: bold
+    - word: 'hide'
+      class: hide
     # 'line' highlight only matching line
-    - line: '0.1'
+    - line: '10'
       class: italic
 
-# Test url : http://localhost:8080/args/test?hostname=foo&ip=192.168.0.1&mac=00:11:22:33:44:55
-# Plain test url : http://localhost:8080/args/test/plain?hostname=foo&ip=192.168.0.1&mac=00:11:22:33:44:55
 - name: Args
   description: "Test args, suburls, password and plain text"
   url: /args/test
