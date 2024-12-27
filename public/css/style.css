@@ -1,21 +1,30 @@
+body, html {
+  margin: 0; /* Supprime les marges par défaut du body et de html */
+  padding: 0; /* Supprime les paddings par défaut du body et de html */
+  height: 100%; /* Assure que le body et html occupent toute la hauteur de la fenêtre */
+  width: 100%; /* Assure que le body et html occupent toute la largeur de la fenêtre */
+}
+
 .console {
-  margin: -45px auto;
+  height: 100%; /* Assure que .console occupe toute la hauteur de la fenêtre */
+  width: 100%; /* Assure que .console occupe toute la largeur de la fenêtre */
+  background-color: #1a1a1a; /* Fond de la console */
 }
 
 #code {
   font-family: monospace;
   color: #F1F1F1;
-  background-color: #222222;
-  width: 440em;
-  margin: 4em auto;
-  padding: 0.5em;
-  border-radius: .25em;
+  background-color: #222222; /* Fond de la zone de code */
+  width: 100%; /* Prend toute la largeur disponible */
+  height: 100%; /* Prend toute la hauteur disponible */
+  margin: 0; /* Supprime les marges */
+  padding: 0; /* Supprime les paddings */
+  border-radius: 0; /* Aucun arrondi des bords */
   white-space: pre-wrap;
   word-wrap: break-word;
   counter-reset: line;
-  overflow-y: auto;
-  height: 100vh;
-  box-sizing: border-box;
+  overflow-y: auto; /* Permet le défilement si nécessaire */
+  box-sizing: border-box; /* Inclut la bordure et le padding dans la taille de l'élément */
 }
 
 .log-line {
@@ -48,7 +57,7 @@
 .control-buttons {
   position: fixed;
   bottom: 10px;
-  right: 10px;
+  right: 20px;
   display: flex;
   flex-direction: column;
   gap: 8px;

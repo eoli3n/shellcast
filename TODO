@@ -1,5 +1,2 @@
 - fix indentation for /help test wit cat : keep spaces
-- scroll long logs with bar
-- horizontal size of the console
-- remove white bar at the left of the screen
 - delay after restart ? regexp cache ?
