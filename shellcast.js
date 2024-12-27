@@ -179,10 +179,12 @@ config.forEach((cast) => {
         const castArgs = cast.args ? cast.args.map(arg => req.query[arg]) : [];
         const escapedArgs = castArgs.map(arg => shellEscape([arg]).replace(/^'(.*)'$/, '$1')).join(' ');
         
-        escapedArgs.split(' ').forEach((escapedArg, index) => {
-            const placeholder = `{${cast.args[index]}}`;
-            cmd = cmd.split(placeholder).join(escapedArg);
-        });
+        if (cast.args && cast.args.length > 0) {
+            escapedArgs.forEach((escapedArg, index) => {
+                const placeholder = `{${cast.args[index]}}`;
+                cmd = cmd.split(placeholder).join(escapedArg);
+            });
+        }
 
         const cmdList = cmd.split(' ');
         const cmdFirst = cmdList.shift();

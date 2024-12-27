@@ -1,223 +1,265 @@
+import { AnsiUp } from './ansi_up.js'
+const ansiUp = new AnsiUp();
+ansiUp.use_classes = true; // Active l'utilisation des classes CSS pour les couleurs ANSI
+
+// Cache des regex pour optimiser les recherches
 const regexCache = new Map()
 
-// Buffer pour l'affichage des lignes
+// Buffer pour stocker les lignes à afficher
 const lineBuffer = []
 let isProcessing = false
-let finishedProcessing = false  // Indicateur pour la fin du processus
+let finishedProcessing = false  // Indicateur pour signaler la fin du processus de traitement
 
-// Fonction de mise en cache des regex
+// Fonction de mise en cache des expressions régulières pour une utilisation répétée
 const getRegex = (pattern) => {
     if (!regexCache.has(pattern)) {
-        regexCache.set(pattern, new RegExp(pattern))
+        regexCache.set(pattern, new RegExp(pattern)) // Cache la regex pour la réutiliser
     }
     return regexCache.get(pattern)
 }
 
-// Optimisation de l'autoscroll avec requestAnimationFrame
+// Fonction d'autoscroll optimisée avec requestAnimationFrame
 let scrollTimeout
 const smartScroll = () => {
-    if (scrollTimeout) return
+    if (scrollTimeout) return // Ne pas exécuter si un autre scroll est déjà en cours
     
+    // Demande un rafraîchissement du scroll lorsque l'animation est prête
     scrollTimeout = requestAnimationFrame(() => {
         const html = document.documentElement
-        html.scrollTop = html.scrollHeight
+        html.scrollTop = html.scrollHeight // Fait défiler jusqu'en bas
         scrollTimeout = null
     })
 }
 
-// Connexion socket
+// Connexion au serveur via WebSocket
 const locationSub = window.location.origin + window.location.search
 const socket = io.connect(locationSub, {
-    path: '/' + window.location.pathname.split('/')[1] + '/socket.io',
+    path: '/' + window.location.pathname.split('/')[1] + '/socket.io', // Ajuste le chemin du WebSocket
     transports: ['websocket'],
-    upgrade: false
+    upgrade: false // Désactive la mise à niveau du transport (pour forcer le WebSocket)
 })
 
-let jsonHighlight = []
+let jsonHighlight = []  // Tableau pour les configurations de surlignage
 
-// Initialisation
+// Initialisation de la connexion et envoi des événements initiaux
 socket.emit('init', window.location.pathname)
 socket.emit('focus')
 
-// Réception de la configuration highlight
+// Réception des configurations de surlignage depuis le serveur
 socket.on('highlight', (data) => {
-    //console.log('Received highlight config:', data)
-    jsonHighlight = data || []
+    jsonHighlight = data || [] // Sauvegarde des données de surlignage
     jsonHighlight.forEach(hl => {
-        if (hl.word) getRegex(hl.word)
-        if (hl.line) getRegex(hl.line)
+        if (hl.word) getRegex(hl.word)  // Cache les regex pour chaque mot à surligner
+        if (hl.line) getRegex(hl.line)  // Cache les regex pour chaque ligne à surligner
     })
     
-    socket.emit('run')
+    socket.emit('run') // Lance le traitement sur le serveur
 })
 
-// Créer une ligne
+// Fonction pour créer un élément <span> avec un mot donné
 const createSpan = (word) => {
-    const span = document.createElement('span')
-    span.textContent = word + ' '
-    return span
-}
+    const span = document.createElement('span');
+    span.textContent = word; // Définit le contenu du span
+    return span;
+};
 
-// Application des highlights sur les mots ou les lignes
+// Appliquer les surlignages sur le texte
 const applyHighlights = (element, text, isLine = false) => {
-    //console.log(`Applying highlights to "${text}" (isLine: ${isLine})`)
-    //console.log('Current jsonHighlight:', jsonHighlight)
+    if (!jsonHighlight || jsonHighlight.length === 0) return; // Si pas de surlignages définis, ne rien faire
 
-    if (!jsonHighlight || jsonHighlight.length === 0) {
-        console.warn('No highlight rules available')
-        return
-    }
+    if (isLine) {
+        // Surlignage spécifique pour les lignes
+        for (const hl of jsonHighlight) {
+            if (hl.line && new RegExp(hl.line).test(text)) {
+                // Appliquer le surlignage pour la ligne
+                const contentNodes = Array.from(element.childNodes).filter(node =>
+                    node.nodeType === Node.TEXT_NODE || (node.nodeType === Node.ELEMENT_NODE && node.tagName !== 'A')
+                );
 
-    for (const hl of jsonHighlight) {
-        if (!hl || (!hl.word && !hl.line)) continue
-        
-        const pattern = hl[isLine ? 'line' : 'word']
-        if (pattern) {
-            try {
-                const regex = getRegex(pattern)
-                if (regex.test(text)) {
-                    element.classList.add(hl.class)
-                    //console.log(`Applied highlight class ${hl.class} to: ${text}`)
-                }
-            } catch (error) {
-                console.error(`Error applying highlight: ${error.message}`)
+                contentNodes.forEach(node => {
+                    if (node.nodeType === Node.TEXT_NODE) {
+                        const span = document.createElement('span');
+                        span.className = hl.class; // Appliquer la classe CSS de surlignage
+                        span.textContent = node.textContent;
+                        node.replaceWith(span);
+                    } else if (node.nodeType === Node.ELEMENT_NODE) {
+                        node.classList.add(hl.class); // Ajouter la classe sur l'élément
+                    }
+                });
+                return; // Arrêter après le premier surlignage trouvé
             }
         }
+        return; // Si aucune règle de ligne n'a été trouvée
     }
-}
 
-// Créer une ligne complète avec les éléments
+    // Surlignage des mots dans le texte
+    if (!isLine) {
+        const nodes = Array.from(element.childNodes);
+        element.innerHTML = ''; // Vider l'élément pour le reconstruire avec les spans
+
+        nodes.forEach(node => {
+            if (node.nodeType === Node.TEXT_NODE) {
+                const words = node.textContent.split(/(\s+)/); // Séparer le texte en mots tout en gardant les espaces
+                words.forEach(word => {
+                    if (word.trim().length === 0) { 
+                        element.appendChild(document.createTextNode(word)); // Ajouter directement les espaces
+                        return;
+                    }
+                    const span = document.createElement('span');
+                    span.textContent = word;
+
+                    // Vérifier chaque mot pour appliquer un surlignage si nécessaire
+                    for (const hl of jsonHighlight) {
+                        if (hl.word && getRegex(hl.word).test(word)) {
+                            // Si des classes sont déjà présentes (comme ansi-*), les ajouter sans les supprimer
+                            if (span.classList.length > 0) {
+                                span.classList.add(hl.class); // Ajouter la classe de surlignage
+                            } else {
+                                span.classList.add(hl.class); // Ajouter la classe de surlignage si aucune autre classe n'est présente
+                            }
+                        }
+                    }
+                    element.appendChild(span); // Ajouter le mot à l'élément
+                });
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+                // Pour les éléments avec des classes existantes, préserver les classes ansi- et ajouter des classes de surlignage supplémentaires
+                const clonedNode = node.cloneNode(true); // Cloner le noeud
+                jsonHighlight.forEach(hl => {
+                    if (hl.word && new RegExp(hl.word).test(node.textContent)) {
+                        clonedNode.classList.add(hl.class); // Ajouter la classe de surlignage au node
+                    }
+                });
+                element.appendChild(clonedNode); // Ajouter l'élément cloné à l'élément principal
+            }
+        });
+    }
+};
+
+
+// Créer un élément de ligne avec son contenu
 const createLine = (data) => {
-    const lineDiv = document.createElement('div')
-    lineDiv.className = 'log-line'
-    
-    // Ajout du lien vide pour la numérotation CSS
-    const link = document.createElement('a')
-    lineDiv.appendChild(link)
-    
-    // Traitement des mots et highlights
-    const words = data.split(' ')
-    for (const word of words) {
-        const span = createSpan(word)
-        applyHighlights(span, word, false)
-        lineDiv.appendChild(span)
-    }
-    
-    // Application des highlights de ligne
-    applyHighlights(lineDiv, data, true)
-    
-    return lineDiv
-}
+  const lineDiv = document.createElement('div');
+  lineDiv.className = 'log-line';  // Appliquer une classe pour les lignes de log
 
-// Dynamic batch size handling (removed slider & label)
-let batchSize = 1; // Initial batch size (highly adjustable)
+  // Lien pour afficher les id de ligne
+  const link = document.createElement('a');
+  lineDiv.appendChild(link);
+
+  const contentDiv = document.createElement('div');
+  contentDiv.innerHTML = ansiUp.ansi_to_html(data); // Convertir le texte ANSI en HTML
+
+  applyHighlights(contentDiv, data, false); // Appliquer les surlignages de mots dans la ligne
+
+  lineDiv.appendChild(contentDiv);
+
+  applyHighlights(lineDiv, data, true); // Appliquer les surlignages de ligne après le texte
+
+  return lineDiv;
+};
+
+// Taille du buffer de lignes à traiter
+let batchSize = 1; // Taille de traitement initiale
 let lastProcessTime = 0;
 let smoothedProcessTime;
 const smoothingFactor = 0.02;
 let linesProcessed = 0;
-const MAX_BATCH_SIZE = 5000; // Limit for very large caches
-let startTime; // init var
+const MAX_BATCH_SIZE = 5000; // Limite de taille pour éviter de trop grands lots
+let startTime;
 
-// Traitement des lignes optimisé
+// Fonction pour traiter les lignes de manière optimisée
 const processLines = () => {
-    if (isProcessing) return
-    isProcessing = true
+    if (isProcessing) return; // Si déjà en train de traiter, ne pas démarrer un autre traitement
+    isProcessing = true;
 
     const processNextLines = () => {
         if (lineBuffer.length === 0) {
             if (finishedProcessing) {
-                // Si nous avons fini et qu'il y a 2 lignes vides à la fin, on les retire
+                // Si le traitement est terminé et qu'il y a des lignes vides, les supprimer
                 if (lineBuffer[lineBuffer.length - 1]?.trim() === '' && 
                     lineBuffer[lineBuffer.length - 2]?.trim() === '') {
-                    lineBuffer.pop() // Supprimer la dernière ligne vide
-                    lineBuffer.pop() // Supprimer l'avant-dernière ligne vide
+                    lineBuffer.pop();
+                    lineBuffer.pop();
                 }
             }
-            isProcessing = false
-            return
+            isProcessing = false;
+            return;
         }
 
-        // Traiter un lot de lignes selon la taille du paquet
-        const linesToProcess = lineBuffer.splice(0, batchSize)
-        const fragment = document.createDocumentFragment()
+        const linesToProcess = lineBuffer.splice(0, batchSize); // Prendre un lot de lignes à traiter
+        const fragment = document.createDocumentFragment();
 
         linesToProcess.forEach((line) => {
-            if (line.trim().length === 0) return
-            //console.log("Ligne à afficher: ", line)
-            fragment.appendChild(createLine(line.trim()))
-        })
+            if (line.trim().length === 0) return;
+            const lineDiv = createLine(line.trim());  // Créer un élément pour la ligne
+            fragment.appendChild(lineDiv);
+        });
 
-        //console.log("Fragment ajouté au DOM")
-        document.getElementById('code').appendChild(fragment)
-        smartScroll()
+        document.getElementById('code').appendChild(fragment);
+        smartScroll(); // Appliquer l'autoscroll
 
-        // Dynamically adjust batchSize based on processing time and line count
         const endTime = performance.now();
         const processTime = endTime - startTime;
 
-        smoothedProcessTime =
-            smoothedProcessTime * (1 - smoothingFactor) + processTime * smoothingFactor;
+        smoothedProcessTime = smoothedProcessTime * (1 - smoothingFactor) + processTime * smoothingFactor;
 
-        // Ajustements plus agressifs
-        if (smoothedProcessTime < 5) { // Seuils encore plus bas
-            batchSize = Math.min(Math.round(batchSize * 2.5), MAX_BATCH_SIZE); // Augmentation plus rapide
-        } else if (smoothedProcessTime > 25) { // Seuils encore plus bas
+        // Ajuster la taille du lot pour éviter un traitement trop rapide ou trop lent
+        if (smoothedProcessTime < 5) { 
+            batchSize = Math.min(Math.round(batchSize * 2.5), MAX_BATCH_SIZE); 
+        } else if (smoothedProcessTime > 25) { 
             batchSize = Math.max(Math.floor(batchSize / 2), 1);
         }
 
-        // Ajustement initial plus rapide
         linesProcessed += linesToProcess.length;
+        // Ajuster la taille du lot en fonction du nombre de lignes traitées
         if (linesProcessed < 10) {
-            batchSize = Math.min(25, MAX_BATCH_SIZE); // Ajustement rapide après les 10 premières lignes
+            batchSize = Math.min(25, MAX_BATCH_SIZE); 
         } else if (linesProcessed < 50) {
-            batchSize = Math.min(100, MAX_BATCH_SIZE); // Ajustement plus important après 50 lignes
+            batchSize = Math.min(100, MAX_BATCH_SIZE); 
         } else if (linesProcessed < 1000 && batchSize < 500) {
             batchSize = Math.min(500, MAX_BATCH_SIZE);
         }
 
         if (lineBuffer.length > 0) {
-            requestAnimationFrame(processNextLines) // Continuer à traiter si des lignes restent
+            requestAnimationFrame(processNextLines); // Continuer à traiter les lignes
         } else {
-            isProcessing = false
+            isProcessing = false;
         }
     }
 
-    requestAnimationFrame(processNextLines) // Demander au navigateur de traiter les lignes
+    requestAnimationFrame(processNextLines);
 }
 
-// Réception des lignes
+// Réception des lignes depuis le serveur et ajout dans le buffer
 socket.on('line', (data) => {
     lineBuffer.push(data)
-    processLines() // Traiter les lignes dès qu'une nouvelle ligne est reçue
+    processLines() // Traiter immédiatement la nouvelle ligne
 })
 
 // Réception des lignes tamponnées
 socket.on('lines', (lines) => {
-    //console.log('Received buffered lines:', lines)
-    //lines.forEach(line => lineBuffer.push(line))
-    lineBuffer.push(...lines); // Use spread operator for efficient push
-    processLines()
+    lineBuffer.push(...lines);
+    processLines() // Traiter les lignes tamponnées
 })
 
-// Réception de la déconnexion
+// Gestion de la déconnexion du serveur
 socket.on('disconnect', () => {
     finishedProcessing = true
-    processLines() // Traiter les dernières lignes
+    processLines() // Traiter les dernières lignes après déconnexion
 })
 
-// Déconnexion propre
+// Fermer la connexion proprement lorsque la page est fermée
 window.addEventListener('beforeunload', () => {
     socket.close()
 })
 
-// Lorsque le processus est terminé, et si deux lignes vides sont présentes, les supprimer
+// Lorsque le processus est terminé, vérifier les lignes vides et les supprimer
 socket.on('finished', () => {
     finishedProcessing = true
-    batchSize = Math.min(lineBuffer.length, MAX_BATCH_SIZE); // Traite tout le cache d'un coup
-    processLines()  // Réexécuter le traitement final pour enlever les lignes vides
+    batchSize = Math.min(lineBuffer.length, MAX_BATCH_SIZE); // Traiter tout le cache restant
+    processLines() // Réexécuter le traitement pour enlever les lignes vides
 })
 
-// Fonction de mise à jour de l'auto-scroll
+// Fonction d'auto-scroll
 document.addEventListener("DOMContentLoaded", () => {
     const codeElement = document.getElementById("code")
     const autoScrollButton = document.getElementById("auto-scroll")
@@ -225,23 +267,23 @@ document.addEventListener("DOMContentLoaded", () => {
     const scrollToBottomButton = document.getElementById("scroll-to-bottom")
     let autoScrollEnabled = true
 
-    // Toggle auto-scroll
+    // Toggle de l'auto-scroll
     autoScrollButton.addEventListener("click", () => {
         autoScrollEnabled = !autoScrollEnabled
         autoScrollButton.classList.toggle("active", autoScrollEnabled)
     })
 
-    // Scroll to top
+    // Fonction pour défiler vers le haut
     scrollToTopButton.addEventListener("click", () => {
         codeElement.scrollTo({ top: 0, behavior: "smooth" })
     })
 
-    // Scroll to bottom
+    // Fonction pour défiler vers le bas
     scrollToBottomButton.addEventListener("click", () => {
         codeElement.scrollTop = codeElement.scrollHeight
     })
 
-    // Auto-scroll functionality
+    // Observer les mutations de DOM pour effectuer un auto-scroll
     const observer = new MutationObserver(() => {
         if (autoScrollEnabled) {
             codeElement.scrollTop = codeElement.scrollHeight
@@ -251,14 +293,14 @@ document.addEventListener("DOMContentLoaded", () => {
     observer.observe(codeElement, { childList: true, subtree: true })
 })
 
-// Gestion du focus et blur
+// Gestion du focus et blur pour savoir quand l'utilisateur revient ou quitte la fenêtre
 let isFocused = true
 
-// Focus sur le client : demander les lignes tamponnées au serveur
+// Focus sur le client : demander les lignes tamponnées
 window.addEventListener('focus', () => {
     if (!isFocused) {
         isFocused = true
-        socket.emit('focus') // Envoyer l'événement de focus au serveur
+        socket.emit('focus') // Envoie l'événement de focus au serveur
     }
 })
 
@@ -266,6 +308,6 @@ window.addEventListener('focus', () => {
 window.addEventListener('blur', () => {
     if (isFocused) {
         isFocused = false
-        socket.emit('blur') // Envoyer l'événement de blur au serveur
+        socket.emit('blur') // Envoie l'événement de blur au serveur
     }
 })

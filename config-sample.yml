@@ -12,27 +12,11 @@
   # 'class' could be any class define in public/css/custom.css
   highlight:
     # 'word' highlight only matching word
-    - word: 'white'
-      class: white
-    - word: 'hide'
-      class: hide
-    - word: 'gray'
-      class: gray
-    - word: 'red'
-      class: red
-    - word: 'orange'
-      class: orange
-    - word: 'yellow'
-      class: yellow
-    - word: 'purple'
-      class: purple
-    - word: 'blue'
-      class: blue
     - word: 'green'
-      class: green
+      class: bold
     # 'line' highlight only matching line
     - line: '0.1'
-      class: yellow
+      class: italic
 
 # Test url : http://localhost:8080/args/test?hostname=foo&ip=192.168.0.1&mac=00:11:22:33:44:55
 # Plain test url : http://localhost:8080/args/test/plain?hostname=foo&ip=192.168.0.1&mac=00:11:22:33:44:55
