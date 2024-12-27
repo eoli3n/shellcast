@@ -41,8 +41,8 @@ body, html {
 .log-line a {
   display: inline-block;
   text-align: right;
-  min-width: 40px;
-  margin-left: -40px;
+  min-width: 50px;
+  margin-left: -50px;
   color: #888;
   position: absolute;
 }
