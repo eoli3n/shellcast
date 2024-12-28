@@ -1,2 +1,3 @@
 - fix indentation for /help test wit cat : keep spaces
 - delay after restart ? regexp cache ?
+- when using bat test, colors are not set with classes
