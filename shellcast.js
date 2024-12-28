@@ -177,7 +177,11 @@ config.forEach((cast) => {
 
         let cmd = cast.cmd;
         const castArgs = cast.args ? cast.args.map(arg => req.query[arg]) : [];
-        const escapedArgs = castArgs.map(arg => shellEscape([arg]).replace(/^'(.*)'$/, '$1')).join(' ');
+        
+        // Escaper chaque argument individuellement
+        const escapedArgs = castArgs.map(arg => 
+          shellEscape([arg]).replace(/^'(.*)'$/, '$1')
+        );
         
         if (cast.args && cast.args.length > 0) {
             escapedArgs.forEach((escapedArg, index) => {
