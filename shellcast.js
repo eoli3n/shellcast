@@ -18,6 +18,9 @@ const express = require('express'),
       shellEscape = require('shell-escape'),
       validator = require('validator');
 
+// Set trust proxy before adding any middleware or routes
+app.set('trust proxy', true);
+
 // Set up view engine and static resources
 app.engine('html', cons.handlebars);
 app.set('view engine', 'html');
@@ -86,7 +89,7 @@ io.sockets.on('connection', (socket) => {
             const cmdList = cmdString.split(' ');
             const cmdFirst = cmdList.shift();
 
-            console.log('Final command:', cmdString);
+            //console.log('Final command:', cmdString);
             //console.log('Sending highlight config:', castHighlightJson);
 
             const run = spawn(cmdFirst, cmdList);
