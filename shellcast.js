@@ -121,6 +121,19 @@ io.sockets.on('connection', (socket) => {
             });
 
             run.on('close', (code) => {
+                let ANSI_COLOR_RED = '\x1b[38;5;9m';  // Rouge
+                let ANSI_COLOR_GREEN = '\x1b[38;5;10m'; // Vert
+                let ANSI_RESET = '\x1b[0m';
+                let ANSI_GRAY_ITALIC = '\x1b[38;5;8m\x1b[3m'; // Gris italique
+                let icon = (code !== 0) ? `${ANSI_COLOR_RED}✘${ANSI_RESET}` : `${ANSI_COLOR_GREEN}✔${ANSI_RESET}`;
+                let line = `${icon} ${ANSI_GRAY_ITALIC}Command exited with code ${code}${ANSI_RESET}`;
+                if (!socket.focus) {
+                    //console.log(`Buffering stderr line for ${clientId}:`, line);
+                    clientBuffers.get(clientId).push(line);
+                } else {
+                    //console.log(`Sending stderr line to ${clientId}:`, line);
+                    socket.emit('line', line);
+                }
                 console.log(`Command ${cmdString} exited with code ${code}`);
             });
 
