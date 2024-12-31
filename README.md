@@ -1,83 +1,37 @@
 # ShellCast
 
 A node app to stream multiple shell output realtime with args and highlighting.  
-:exclamation: Shellcast defaultly perform in a "/shellcast" subdir now.
-Change SUBDIR environment var to specify another web subdirectory.
 
-## Examples
+## Config
+
+See [config-sample.yml](config-sample.yml)
 
 ### Rainbow
 
-``config.yml``
-```
-- name: Rainbow
-  description: "Test word highlights and stream"
-  url: /rainbow
-  cmd: ./tests/rainbow.sh
-  highlight:
-    - word: 'white'
-      class: white
-    - word: 'hide'
-      class: hide
-    - word: 'gray'
-      class: gray
-    - word: 'red'
-      class: red
-    - word: 'orange'
-      class: orange
-    - word: 'yellow'
-      class: yellow
-    - word: 'purple'
-      class: purple
-    - word: 'blue'
-      class: blue
-    - word: 'green'
-      class: green
-    - line: '0.1'
-      class: yellow
-```
-``tests/rainbow.sh``
-```
- #!/bin/bash
-for i in {0..20..1}
-do
-    echo "white hide gray hide red hide orange hide yellow hide purple hide blue hide green" 
-    echo "...lets sleep 0.$i s"
-    sleep 0.$i
-done   
-```
+[tests/rainbow.sh](tests/rainbow.sh)
+
+#### Console
+
+[](http://localhost:3000/shellcast/rainbow)
 ![Alt Text](tests/rainbow.gif)
+
+#### Plain
+
+curl -s "http://localhost:3000/shellcast/rainbow/plain"
+![Alt Text](tests/rainbow_plain.gif)
 
 ### Args
 
-``config.yml``
-```
-- name: Args
-  description: "Test args, suburls, password and plain text"
-  url: /args/test
-  password: suburlpass
-  cmd: ./tests/args.sh {} {} {}
-  args:
-    - hostname
-    - ip
-    - mac
-```
-``tests/args.sh``
-```
-#!/bin/bash
+[tests/args.sh](tests/args.sh)
 
-printf "%-20s" "Hostname:"
-printf "$1\n"
-printf "%-20s" "IP:"
-printf "$2\n"
-printf "%-20s" "Mac:"
-printf "$3\n"
-```
 #### Console
-``http://localhost:3000/shellcast/args/test``
+
+[](http://localhost:3000/shellcast/args/test?password=suburlpass&hostname=toto&mac=tata&ip=192.168.0.1)
 ![Alt Text](tests/args.png)
+
 #### Plain
-``http://localhost:3000/shellcast/args/test/plain``
+
+curl -s "http://localhost:3000/shellcast/args/test/plain?password=suburlpass&hostname=toto&mac=tata&ip=192.168.0.1"
 ![Alt Text](tests/args_plain.png)
 
 ## Installation
@@ -88,24 +42,21 @@ npm install
 ```
 ## Test
 ```
+git clone https://github.com/eoli3n/shellcast
+cd shellcast
+cp config-sample.yml config.yml
 SUBDIR=shellcast NODE_PORT=3000 node shellcast.js config.yml
 ```
-Then access to 
-- http://localhost:3000/shellcast/args/test?password=suburlpass&hostname=toto&mac=tata&ip=192.168.0.1
-- http://localhost:3000/shellcast/args/test/plain?password=suburlpass&hostname=toto&mac=tata&ip=192.168.0.1
 
-## Configuration
-Please read [config.yml](config.yml)
-
-### Configure with nginx
+### Reverse proxy with nginx
 ```
 mkdir -p /opt/shellcast
-##install
+#install
 ```
 ```
 cat << EOF > /etc/nginx/sites-available/shellcast
 server {
-    root /srv/node/shellcast;
+    root /var/www/html;
     listen      443 ssl;
 
     ssl_certificate      /etc/ssl/cert.crt
@@ -115,11 +66,13 @@ server {
     ssl_ciphers          HIGH:!ADH:!MD5;
     ssl_prefer_server_ciphers on;
 
+    # use SUBDIR here
     location /shellcast/ {
         add_header Access-Control-Allow-Origin *;
         proxy_set_header X-Real-IP $remote_addr;                      
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;                                              
         proxy_set_header X-Forwarded-Proto $scheme;
+        # use NODE_PORT here
         proxy_pass http://localhost:3000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
