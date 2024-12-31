@@ -38,16 +38,34 @@ try {
     process.exit(1);
 }
 
-// Validate parameters
+const forbiddenChars = ['>', '<', '|', '&', ';', '(', ')', '\\', '!', '*', '$', '=', '+', '~', '"'];
+
+const findForbiddenChar = (arg) => {
+    // Cherche le premier caractère interdit dans l'argument et le retourne
+    for (let char of forbiddenChars) {
+        if (arg.includes(char)) {
+            return char; // Retourne le premier caractère interdit trouvé
+        }
+    }
+    return null; // Aucun caractère interdit trouvé
+};
+
 const validateParams = (params, req, res) => {
     const errors = [];
+
     params.forEach(param => {
-        if (typeof req.query[param] === 'undefined') {
+        const value = req.query[param];
+
+        if (typeof value === 'undefined') {
             errors.push(`Missing "${param}" parameter`);
-        } else if (/[\;&<>|()/\\!*\$=+~]/.test(req.query[param])) {
-            errors.push(`"${param}" cannot contain special characters`);
+        } else {
+            const forbiddenChar = findForbiddenChar(value);
+            if (forbiddenChar) {
+                errors.push(`"${param}" contains forbidden character: "${forbiddenChar}"`);
+            }
         }
     });
+
     return errors;
 };
 
@@ -63,14 +81,14 @@ io.sockets.on('connection', (socket) => {
 
     socket.on('init', (url) => {
         let castArgs = [];
-        let cmdString = '';
+        let cmd = '';
         let castHighlightJson = [];
         
         // Find the cast corresponding to the URL
         const cast = config.find(c => c.url.replace(/\/$/, '') === url.replace(/\/$/, ''));
         
         if (cast) {
-            cmdString = cast.cmd;
+            cmd = cast.cmd;
             // Prepare arguments for the command
             if (cast.args) {
                 castArgs = cast.args.map(arg => socket.handshake.query[arg]);
@@ -80,19 +98,17 @@ io.sockets.on('connection', (socket) => {
             // Send highlights to client
             socket.emit('highlight', castHighlightJson);
 
-            const escapedArgs = castArgs.map(arg => shellEscape([arg]).replace(/^'(.*)'$/, '$1'));
-            escapedArgs.forEach((escapedArg, index) => {
-                const placeholder = `{${cast.args[index]}}`;
-                cmdString = cmdString.split(placeholder).join(escapedArg);
-            });
+            if (cast.args && cast.args.length > 0) {
+                castArgs.forEach((arg, index) => {
+                    const placeholder = `{${cast.args[index]}}`;
+                    cmd = cmd.split(placeholder).join(arg);
+                });
+            }
 
-            const cmdList = cmdString.split(' ');
-            const cmdFirst = cmdList.shift();
+            const escapedArgs = castArgs.map(arg => shellEscape([arg])).join(' ');
 
-            //console.log('Final command:', cmdString);
-            //console.log('Sending highlight config:', castHighlightJson);
-
-            const run = spawn(cmdFirst, cmdList);
+            const bashCommand = `${cmd} ${escapedArgs}`;
+            const run = spawn('bash', ['-c', bashCommand]);
 
             run.stdout.pipe(split()).on('data', (data) => {
                 const line = data.toString();
@@ -134,7 +150,7 @@ io.sockets.on('connection', (socket) => {
                     //console.log(`Sending stderr line to ${clientId}:`, line);
                     socket.emit('line', line);
                 }
-                console.log(`Command ${cmdString} exited with code ${code}`);
+                console.log(`Command ${cmd} exited with code ${code}`);
             });
 
             socket.on('disconnect', () => {
@@ -193,23 +209,25 @@ config.forEach((cast) => {
 
         let cmd = cast.cmd;
         const castArgs = cast.args ? cast.args.map(arg => req.query[arg]) : [];
-        
-        // Escaper chaque argument individuellement
-        const escapedArgs = castArgs.map(arg => 
-          shellEscape([arg]).replace(/^'(.*)'$/, '$1')
-        );
+
+        //console.log("castArgs : " + castArgs)
         
         if (cast.args && cast.args.length > 0) {
-            escapedArgs.forEach((escapedArg, index) => {
+            castArgs.forEach((arg, index) => {
                 const placeholder = `{${cast.args[index]}}`;
-                cmd = cmd.split(placeholder).join(escapedArg);
+                cmd = cmd.split(placeholder).join(arg);
             });
         }
 
-        const cmdList = cmd.split(' ');
-        const cmdFirst = cmdList.shift();
-        const run = spawn(cmdFirst, cmdList);
-        
+        //console.log('Commande avant échappement:', cmd);
+
+        const escapedArgs = castArgs.map(arg => shellEscape([arg])).join(' ');
+
+        //console.log('Arguments échappés:', escapedArgs);
+
+        const bashCommand = `${cmd} ${escapedArgs}`;
+        const run = spawn('bash', ['-c', bashCommand]);
+
         run.stdout.pipe(res);
         run.stderr.pipe(res);
         
