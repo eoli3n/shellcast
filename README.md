@@ -46,12 +46,10 @@ curl -s "http://localhost:3000/shellcast/args/test/plain?password=suburlpass&hos
 git clone https://github.com/eoli3n/shellcast
 cd shellcast
 npm install
-```
-## Test
-```
-git clone https://github.com/eoli3n/shellcast
-cd shellcast
 cp config-sample.yml config.yml
+```
+## Run
+```
 SUBDIR=shellcast NODE_PORT=3000 node shellcast.js config.yml
 ```
 
