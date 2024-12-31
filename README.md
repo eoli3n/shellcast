@@ -12,12 +12,15 @@ See [config-sample.yml](config-sample.yml)
 
 #### Console
 
-[](http://localhost:3000/shellcast/rainbow)
+http://localhost:3000/shellcast/rainbow
 ![Alt Text](tests/rainbow.gif)
 
 #### Plain
 
+```bash
 curl -s "http://localhost:3000/shellcast/rainbow/plain"
+```
+
 ![Alt Text](tests/rainbow_plain.gif)
 
 ### Args
@@ -26,12 +29,16 @@ curl -s "http://localhost:3000/shellcast/rainbow/plain"
 
 #### Console
 
-[](http://localhost:3000/shellcast/args/test?password=suburlpass&hostname=toto&mac=tata&ip=192.168.0.1)
+http://localhost:3000/shellcast/args/test?password=suburlpass&hostname=toto&mac=tata&ip=192.168.0.1
+
 ![Alt Text](tests/args.png)
 
 #### Plain
 
+```bash
 curl -s "http://localhost:3000/shellcast/args/test/plain?password=suburlpass&hostname=toto&mac=tata&ip=192.168.0.1"
+```
+
 ![Alt Text](tests/args_plain.png)
 
 ## Installation
