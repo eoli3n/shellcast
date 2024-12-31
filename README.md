@@ -29,14 +29,14 @@ curl -s "http://localhost:3000/shellcast/rainbow/plain"
 
 #### Console
 
-http://localhost:3000/shellcast/args/test?password=suburlpass&hostname=toto&mac=tata&ip=192.168.0.1
+http://localhost:3000/shellcast/args/test?hostname=foo&ip=10.0.0.1&mac=00:11:22:33:44:55&password=suburlpass
 
 ![Alt Text](tests/args.png)
 
 #### Plain
 
 ```bash
-curl -s "http://localhost:3000/shellcast/args/test/plain?password=suburlpass&hostname=toto&mac=tata&ip=192.168.0.1"
+curl -s http://localhost:3000/shellcast/args/test/plain?hostname=foo&ip=10.0.0.1&mac=00:11:22:33:44:55&password=suburlpass
 ```
 
 ![Alt Text](tests/args_plain.png)
