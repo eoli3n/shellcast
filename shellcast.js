@@ -105,6 +105,13 @@ io.sockets.on('connection', (socket) => {
                 });
             }
 
+            // Add magic clientIP var
+            if (cmd.includes("{clientIp}")) {
+                let clientIp = socket.handshake.headers['x-forwarded-for'] || socket.handshake.address;
+                cmd = cmd.split("{clientIp}").join(clientIp); // Remplace {clientIp} dans la commande
+                castArgs.push(clientIp); // Ajoute l'IP à la liste des arguments
+            }
+
             const escapedArgs = castArgs.map(arg => shellEscape([arg])).join(' ');
 
             const bashCommand = `${cmd} ${escapedArgs}`;
@@ -219,6 +226,13 @@ config.forEach((cast) => {
             });
         }
 
+        // Add magic clientIP var
+        if (cmd.includes("{clientIp}")) {
+            let clientIp = req.ip;
+            cmd = cmd.split("{clientIp}").join(clientIp);
+            castArgs.push(clientIp);
+        }
+
         //console.log('Commande avant échappement:', cmd);
 
         const escapedArgs = castArgs.map(arg => shellEscape([arg])).join(' ');
@@ -248,7 +262,7 @@ app.use((req, res) => {
     res.status(404).send('Page Not Found...');
 });
 
-// Start the server
-server.listen(process.env.NODE_PORT, () => {
+// Start the server and listen only ipv4
+server.listen(process.env.NODE_PORT, '0.0.0.0', () => {
     console.log('Server listening on *:' + process.env.NODE_PORT);
 });
