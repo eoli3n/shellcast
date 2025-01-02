@@ -15,7 +15,6 @@ const express = require('express'),
       morgan = require('morgan'),
       path = require('path'),
       favicon = require('serve-favicon'),
-      shellEscape = require('shell-escape'),
       validator = require('validator');
 
 // Set trust proxy before adding any middleware or routes
@@ -108,14 +107,11 @@ io.sockets.on('connection', (socket) => {
             // Add magic clientIP var
             if (cmd.includes("{clientIp}")) {
                 let clientIp = socket.handshake.headers['x-forwarded-for'] || socket.handshake.address;
-                cmd = cmd.split("{clientIp}").join(clientIp); // Remplace {clientIp} dans la commande
-                castArgs.push(clientIp); // Ajoute l'IP à la liste des arguments
+                cmd = cmd.split("{clientIp}").join(clientIp);
+                castArgs.push(clientIp);
             }
 
-            const escapedArgs = castArgs.map(arg => shellEscape([arg])).join(' ');
-
-            const bashCommand = `${cmd} ${escapedArgs}`;
-            const run = spawn('bash', ['-c', bashCommand]);
+            const run = spawn('bash', ['-c', cmd]);
 
             run.stdout.pipe(split()).on('data', (data) => {
                 const line = data.toString();
@@ -233,14 +229,7 @@ config.forEach((cast) => {
             castArgs.push(clientIp);
         }
 
-        //console.log('Commande avant échappement:', cmd);
-
-        const escapedArgs = castArgs.map(arg => shellEscape([arg])).join(' ');
-
-        //console.log('Arguments échappés:', escapedArgs);
-
-        const bashCommand = `${cmd} ${escapedArgs}`;
-        const run = spawn('bash', ['-c', bashCommand]);
+        const run = spawn('bash', ['-c', cmd]);
 
         run.stdout.pipe(res);
         run.stderr.pipe(res);
