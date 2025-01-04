@@ -25,9 +25,11 @@
   url: /args/test
   # Set a password to query url as "?password=suburlpass"
   password: suburlpass
-  # Get /args/test/plain?hostname=foo&ip=192.168.0.1&mac=00:11:22:33:44:55&password=suburlpass
-  # will be run as "./tests/args.sh foo 192.168.0.1 00:11:22:33:44:55"
-  cmd: ./tests/args.sh "{hostname}" "{clientIp}" "{mac}" "{hostname} has ip {ip} and mac {mac}"
+  # Whitelist some specific chars for that service
+  whitelist: ["(", ")", " "]
+  # curl -Gs --data-urlencode "hostname=( f o o )" "http://localhost:3000/shellcast/args/test/plain?mac=00:11:22:33:44:55&password=suburlpass"
+  # will be run as './tests/args.sh "(f o o)" "192.168.0.1" "00:11:22:33:44:55"'
+  cmd: ./tests/args.sh "{hostname}" "{clientIp}" "{mac}" "{hostname} has ip {clientIp} and mac {mac}"
   args:
     - hostname
     - mac

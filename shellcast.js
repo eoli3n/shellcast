@@ -37,9 +37,26 @@ try {
     process.exit(1);
 }
 
-const forbiddenChars = ['>', '<', '|', '&', ';', '(', ')', '\\', '!', '*', '$', '=', '+', '~', '"'];
+const forbiddenChars = ['>', '<', '|', '&', ';', '(', ')', '\\', '!', '*', '$', '=', '+', '~', '"', ' '];
 
-const findForbiddenChar = (arg) => {
+// Fonction pour ajuster les caractères interdits selon la whitelist du service
+const adjustForbiddenChars = (serviceConfig) => {
+    // Si la whitelist est définie dans le service, on enlève ces caractères de la forbiddenChars
+    if (serviceConfig.whitelist && Array.isArray(serviceConfig.whitelist)) {
+        serviceConfig.whitelist.forEach(char => {
+            const index = forbiddenChars.indexOf(char);
+            if (index !== -1) {
+                forbiddenChars.splice(index, 1); // Retirer le caractère de la forbiddenChars
+            }
+        });
+    }
+};
+
+// Fonction pour trouver un caractère interdit dans un argument
+const findForbiddenChar = (arg, serviceConfig) => {
+    // On ajuste d'abord les forbiddenChars selon la whitelist du service
+    adjustForbiddenChars(serviceConfig);
+
     // Cherche le premier caractère interdit dans l'argument et le retourne
     for (let char of forbiddenChars) {
         if (arg.includes(char)) {
@@ -49,7 +66,7 @@ const findForbiddenChar = (arg) => {
     return null; // Aucun caractère interdit trouvé
 };
 
-const validateParams = (params, req, res) => {
+const validateParams = (params, req, res, serviceConfig) => {
     const errors = [];
 
     params.forEach(param => {
@@ -58,7 +75,7 @@ const validateParams = (params, req, res) => {
         if (typeof value === 'undefined') {
             errors.push(`Missing "${param}" parameter`);
         } else {
-            const forbiddenChar = findForbiddenChar(value);
+            const forbiddenChar = findForbiddenChar(value, serviceConfig);
             if (forbiddenChar) {
                 errors.push(`"${param}" contains forbidden character: "${forbiddenChar}"`);
             }
@@ -192,7 +209,7 @@ config.forEach((cast) => {
         if (cast.password && cast.password !== req.query.password) {
             return res.status(403).send('Missing or wrong password...');
         }
-        const errors = validateParams(cast.args || [], req, res);
+        const errors = validateParams(cast.args || [], req, res, cast);
         if (errors.length > 0) {
             return res.status(400).send(errors.join('<br>'));
         }
@@ -205,7 +222,7 @@ config.forEach((cast) => {
         if (cast.password && cast.password !== req.query.password) {
             return res.status(403).send('Incorrect or missing password...');
         }
-        const errors = validateParams(cast.args || [], req, res);
+        const errors = validateParams(cast.args || [], req, res, cast);
         if (errors.length > 0) {
             return res.status(400).send(errors.join('<br>'));
         }
