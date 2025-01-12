@@ -128,6 +128,8 @@ io.sockets.on('connection', (socket) => {
                 castArgs.push(clientIp);
             }
 
+            const startTime = Date.now();
+
             const run = spawn('bash', ['-c', cmd]);
 
             run.stdout.pipe(split()).on('data', (data) => {
@@ -157,12 +159,36 @@ io.sockets.on('connection', (socket) => {
             });
 
             run.on('close', (code) => {
+
+                const endTime = Date.now();
+                const executionTimeInSeconds = (endTime - startTime) / 1000;
+                const hours = Math.floor(executionTimeInSeconds / 3600);
+                const minutes = Math.floor((executionTimeInSeconds % 3600) / 60);
+                const seconds = Math.floor(executionTimeInSeconds % 60);
+                const milliseconds = Math.round((executionTimeInSeconds % 1) * 1000);
+
+                let executionTime = '';
+
+                if (hours > 0) {
+                    executionTime += `${hours}h `;
+                }
+                if (minutes > 0) {
+                    executionTime += `${minutes}m `;
+                }
+
+                if (executionTimeInSeconds < 1) {
+                    executionTime += `${milliseconds}ms`;
+                } else {
+                    executionTime += `${seconds}s`;
+                }
+
                 let ANSI_COLOR_RED = '\x1b[38;5;9m';  // Rouge
                 let ANSI_COLOR_GREEN = '\x1b[38;5;10m'; // Vert
                 let ANSI_RESET = '\x1b[0m';
                 let ANSI_GRAY_ITALIC = '\x1b[38;5;8m\x1b[3m'; // Gris italique
+                let ANSI_WHITE_ITALIC = '\x1b[97m\x1b[3m'; // Blanc italique
                 let icon = (code !== 0) ? `${ANSI_COLOR_RED}✘${ANSI_RESET}` : `${ANSI_COLOR_GREEN}✔${ANSI_RESET}`;
-                let line = `${icon} ${ANSI_GRAY_ITALIC}Command exited with code ${code}${ANSI_RESET}`;
+                let line = `${icon} ${ANSI_WHITE_ITALIC}Command exited with code ${code} in ${executionTime}.${ANSI_RESET}`;
                 if (!socket.focus) {
                     //console.log(`Buffering stderr line for ${clientId}:`, line);
                     clientBuffers.get(clientId).push(line);

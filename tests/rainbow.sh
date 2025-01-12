@@ -10,7 +10,8 @@ CYAN='\033[0;36m'
 WHITE='\033[0;37m'
 RESET='\033[0m'
 
-for i in {1..20000..1}
+for i in {1..200..1}
 do
     echo -e "$i ${WHITE}white${RESET} hide ${RED}red${RESET} hide ${GREEN}green${RESET} hide ${YELLOW}yellow${RESET} hide ${BLUE}blue${RESET} hide ${MAGENTA}magenta${RESET} hide ${CYAN}cyan${RESET}"
+    sleep 0.1
 done
