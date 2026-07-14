@@ -381,59 +381,65 @@ function authIfNeeded(service) {
 config.forEach((cast) => {
     cast.url = subdir + cast.url.replace(/\/$/, '');
     
-    app.get(cast.url, authIfNeeded(cast), (req, res) => {       
-        // Renvoie la liste des paramètres incorrect au sein du service lancé et renvoie une erreur 400 côté client si la liste en contient au moins une 
-        const errors = validateParams(cast.args || [], req, res, cast);
-        if (errors.length > 0) {
-            return res.status(400).send(errors.join('<br>'));
-        }
-        // Charge la page html où sera affiché les résultats de la commande
-        res.setHeader('Content-Type', 'text/html');
-        res.render('index', { title: cast.name, subdir: subdir });
-    });
+    // Si mode web ou non défini, activer cette route
+    if (cast.mode === undefined || cast.mode === "web") {
+        app.get(cast.url, authIfNeeded(cast), (req, res) => {       
+            // Renvoie la liste des paramètres incorrect au sein du service lancé et renvoie une erreur 400 côté client si la liste en contient au moins une 
+            const errors = validateParams(cast.args || [], req, res, cast);
+            if (errors.length > 0) {
+                return res.status(400).send(errors.join('<br>'));
+            }
+            // Charge la page html où sera affiché les résultats de la commande
+            res.setHeader('Content-Type', 'text/html');
+            res.render('index', { title: cast.name, subdir: subdir });
+        });
+    }
 
-    app.get(cast.url + '/plain' ,authIfNeeded(cast) ,(req, res) => {
-        res.setHeader('Content-Type', 'text/plain');
-        // Renvoie la liste des paramètres incorrect et renvoie une erreur 400 côté client si la liste en contient au moins une 
-        const errors = validateParams(cast.args || [], req, res, cast);
-        if (errors.length > 0) {
-            return res.status(400).send(errors.join('<br>'));
-        }
+    // Si mode plain ou non défini, activer cette route
+    if (cast.mode === undefined || cast.mode === "plain") {
+        app.get(cast.url + '/plain' ,authIfNeeded(cast) ,(req, res) => {
+            res.setHeader('Content-Type', 'text/plain');
+            // Renvoie la liste des paramètres incorrect et renvoie une erreur 400 côté client si la liste en contient au moins une 
+            const errors = validateParams(cast.args || [], req, res, cast);
+            if (errors.length > 0) {
+                return res.status(400).send(errors.join('<br>'));
+            }
 
-        let cmd = cast.cmd;
-        const castArgs = cast.args ? cast.args.map(arg => req.query[arg]) : [];
+            let cmd = cast.cmd;
+            const castArgs = cast.args ? cast.args.map(arg => req.query[arg]) : [];
 
-        //console.log("castArgs : " + castArgs)
-        
-        if (cast.args && cast.args.length > 0) {
-            castArgs.forEach((arg, index) => {
-                const placeholder = `{${cast.args[index]}}`;
-                cmd = cmd.split(placeholder).join(arg);
+            //console.log("castArgs : " + castArgs)
+            
+            if (cast.args && cast.args.length > 0) {
+                castArgs.forEach((arg, index) => {
+                    const placeholder = `{${cast.args[index]}}`;
+                    cmd = cmd.split(placeholder).join(arg);
+                });
+            }
+
+            // Add magic x_forwarded_for var
+            if (cmd.includes("{x_forwarded_for}")) {
+                let x_forwarded_for = req.ip;
+                cmd = cmd.split("{x_forwarded_for}").join(x_forwarded_for);
+                castArgs.push(x_forwarded_for);
+            }
+            // Permet d'exécuter des commandes produisant beaucoup de données
+            // et d'intéragir avec les sorties std
+            const run = spawn('bash', ['-c', cmd]);
+            // On exécute la commande sur stdout et stderr
+            run.stdout.pipe(res);
+            run.stderr.pipe(res);
+            
+            run.on('error', (error) => {
+                console.error('Error spawning process:', error);
+                res.status(500).send(`Error spawning process: ${error.message}`);
             });
-        }
-
-        // Add magic x_forwarded_for var
-        if (cmd.includes("{x_forwarded_for}")) {
-            let x_forwarded_for = req.ip;
-            cmd = cmd.split("{x_forwarded_for}").join(x_forwarded_for);
-            castArgs.push(x_forwarded_for);
-        }
-        // Permet d'exécuter des commandes produisant beaucoup de données
-        // et d'intéragir avec les sorties std
-        const run = spawn('bash', ['-c', cmd]);
-        // On exécute la commande sur stdout et stderr
-        run.stdout.pipe(res);
-        run.stderr.pipe(res);
-        
-        run.on('error', (error) => {
-            console.error('Error spawning process:', error);
-            res.status(500).send(`Error spawning process: ${error.message}`);
+            
+            run.on('close', (code) => {
+                console.log(`Command ${cmd} exited with code ${code}`);
+            });
         });
-        
-        run.on('close', (code) => {
-            console.log(`Command ${cmd} exited with code ${code}`);
-        });
-    });
+    }
 });
 
 // Handle 404 errors
