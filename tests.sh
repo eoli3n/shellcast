@@ -16,6 +16,16 @@ pause() {
     echo
 }
 
+title "Test valid whitelisted chars"
+run curl -Gs --data-urlencode "hostname=( f o o )" "http://localhost:3000/shellcast/args/test/plain?mac=00:11:22:33:44:55"
+
+pause
+
+title "Test NOT valid chars"
+run curl -Gs --data-urlencode "hostname=&foo&" "http://localhost:3000/shellcast/args/test/plain?mac=00:11:22:33:44:55"
+
+pause
+
 title "Test without authentication"
 run curl -i "http://localhost:3000/shellcast/args/test/plain?hostname=foo&ip=10.0.0.1&mac=00:11:22:33:44:55"
 

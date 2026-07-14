@@ -158,33 +158,38 @@ function checkUser(username, password) {
     return bcrypt.compareSync(password, storedHash);
 }
 
-const forbiddenChars = ['>', '<', '|', '&', ';', '(', ')', '\\', '!', '*', '$', '=', '+', '~', '"', ' '];
+const defaultForbiddenChars = [
+    '>',
+    '<',
+    '|',
+    '&',
+    ';',
+    '(',
+    ')',
+    '\\',
+    '!',
+    '*',
+    '$',
+    '=',
+    '+',
+    '~',
+    '"',
+    ' '
+];
 
-// Fonction pour ajuster les caractères interdits selon la whitelist du service
-const adjustForbiddenChars = (serviceConfig) => {
-    // Si la whitelist est définie dans le service, on enlève ces caractères de la forbiddenChars
-    if (serviceConfig.whitelist && Array.isArray(serviceConfig.whitelist)) {
-        serviceConfig.whitelist.forEach(char => {
-            const index = forbiddenChars.indexOf(char);
-            if (index !== -1) {
-                forbiddenChars.splice(index, 1); // Retirer le caractère de la forbiddenChars
-            }
-        });
-    }
-};
-
-// Fonction pour trouver un caractère interdit dans un argument
 const findForbiddenChar = (arg, serviceConfig) => {
-    // On ajuste d'abord les forbiddenChars selon la whitelist du service
-    adjustForbiddenChars(serviceConfig);
 
-    // Cherche le premier caractère interdit dans l'argument et le retourne
-    for (let char of forbiddenChars) {
-        if (arg.includes(char)) {
-            return char; // Retourne le premier caractère interdit trouvé
-        }
+    let forbiddenChars = [...defaultForbiddenChars];
+
+    if (serviceConfig.whitelist && Array.isArray(serviceConfig.whitelist)) {
+        forbiddenChars = forbiddenChars.filter(
+            char => !serviceConfig.whitelist.includes(char)
+        );
     }
-    return null; // Aucun caractère interdit trouvé
+
+    return forbiddenChars.find(
+        char => arg.includes(char)
+    ) || null;
 };
 
 const validateParams = (params, req, res, serviceConfig) => {
