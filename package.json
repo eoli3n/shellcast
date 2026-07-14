@@ -9,9 +9,11 @@
   "author": "eoli3n",
   "license": "WTFPL",
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "consolidate": "^0.15.0",
     "engine.io": "^6.6.2",
-    "express": "^4.16.2",
+    "express": "^4.22.2",
+    "express-basic-auth": "^1.2.1",
     "fs": "0.0.1-security",
     "handlebars": "^4.0.11",
     "ini": "^1.3.5",

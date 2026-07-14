@@ -1,4 +1,8 @@
-- fix indentation for /help test wit cat : keep spaces
-- delay after restart ? regexp cache ?
+# ismaelfezzani
+- tests and fix bugs
+- delay after restart ? regexp cache ? à vérifier
+- mode debug : how to activate and produce more logs
+
+# eoli3n
 - when using bat test, colors are not set with classes
 - add process time in the end line

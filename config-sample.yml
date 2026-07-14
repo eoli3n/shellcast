@@ -33,3 +33,25 @@
   args:
     - hostname
     - mac
+
+- name: Auth and mode
+  description : "Test auth and mode"
+  url: /auth
+  mode: plain
+  # Configure authentication
+  grant:
+    # This activates basic auth on the service, users are defined in users.yml
+    local_user:
+      - user1
+    # This needs extra configuration with external authenticator, see README.md
+    x_remote_user:
+      - remote_user1
+      - remote_user2
+    x_group:
+      - group1
+      - group2
+    # To generate hash password, use ./generate-password-hash.sh 'pa$$w0rd1'
+    password:
+      - tag1: "$2b$10$6Fworo8.aY8E2G7qbx/JFOsc3XNAcDpDQ9NY8t5jZH1zthTdKCS.y" # pa$$w0rd1
+      - tag2: "$2b$10$Z1GOW3DmYWM2Sx9IpxoaDurEZBX2mhABhJFfUbWXsaaytIs5k5AQe" # pa$$w0rd2
+  cmd: echo "Authentication succedded with mode plain !"

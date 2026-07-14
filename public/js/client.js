@@ -42,7 +42,7 @@ const socket = io.connect(locationSub, {
 let jsonHighlight = []  // Tableau pour les configurations de surlignage
 
 // Initialisation de la connexion et envoi des événements initiaux
-socket.emit('init', window.location.pathname)
+socket.emit('init', [window.location.pathname] )
 socket.emit('focus')
 
 // Réception des configurations de surlignage depuis le serveur

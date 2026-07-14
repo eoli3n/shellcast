@@ -1,0 +1,4 @@
+--- 
+# To generate hash password, use ./generate-password-hash.sh 'password1'
+user1: "$2b$10$o0ftGxck933YDzXLKqnREOTMsiVfkyCn3m8ip3MvxTO.u.WKwaPBa" # "password1"
+user2: "$2b$10$ldRNm7nC9k6J1GY/sm/nuOjytcw3PbtNAzsbJSdWKbZyy7l0AONRO" # "password2"

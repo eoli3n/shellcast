@@ -125,13 +125,44 @@ Configure a location with check_auth endpoint
   }
 ```
 
+Configure a route for /plain service which excludes auth_request
+
+```
+  location ~ ^/shellcast/.*/plain$ {
+    add_header Access-Control-Allow-Origin *;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_pass http://localhost:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection 'upgrade';
+    proxy_set_header Host $host;
+    proxy_cache_bypass $http_upgrade;
+    proxy_temp_path /tmp/shellcast;
+  }
+```
+
 Configure shellcast location to get user and group from check_auth
 ```
+  location /shellcast/ {
+    add_header Access-Control-Allow-Origin *;
     auth_request /_check_auth;
     auth_request_set $app_user  $upstream_http_x_remote_user;
     auth_request_set $app_group $upstream_http_x_group;
     proxy_set_header X-Remote-User $app_user;
     proxy_set_header X-Group $app_group;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_pass http://localhost:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection 'upgrade';
+    proxy_set_header Host $host;
+    proxy_cache_bypass $http_upgrade;
+    proxy_temp_path /tmp/shellcast;
+  }
 ```
 
 ### Start NodeJS app with systemd
