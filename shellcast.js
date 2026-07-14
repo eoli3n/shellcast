@@ -324,8 +324,19 @@ function authIfNeeded(service) {
             return next();
         }
 
+        // Si x-remote-user est autorisé
+        const remoteUser = req.headers["x-remote-user"];
+
+        if (
+            remoteUser &&
+            Array.isArray(service.grant.x_remote_user) &&
+            service.grant.x_remote_user.includes(remoteUser)
+        ) {
+            return next();
+        }
+
         // Sinon erreur d'accès
-        return res.sendStatus(401)
+        return res.sendStatus(401);
     }
 }
 
