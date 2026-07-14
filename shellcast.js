@@ -316,92 +316,16 @@ io.sockets.on('connection', (socket) => {
 const basicAuthShellcast = basicAuth({users : users, authorizer : checkUser, challenge : true,  realm: 'shellcast'})
 
 // Middleware permettant d'appliquer ou non le middleware sous certaines conditions et prenant en paramètre les données sotckées dans la variable cast
-function authIfNeeded(castData) {
+function authIfNeeded(service) {
     return (req, res, next) =>{
-        // Récupération des users et du groupe passés en headers dans l'URL
-        const userId = req.headers["x-remote-user"];
-        const group = req.headers["x-group"];
 
-        console.log(castData)
-
-        // Récupération des users et groupes autorisés
-        let configUsers = castData;
-        let authorizedUsers = Object.keys(configUsers).includes("grant") && configUsers["grant"] !== null ? configUsers["grant"] : {};
-
-
-        //console.log(users)
-       // console.log(authorizedUsers)
-
-        let localUsersShellcast = users !== undefined && Object.keys(users).length > 0 ? new Set(Object.keys(users)) : new Set([])
-        let localUsersGrant =  authorizedUsers["local_user"] !== undefined &&  authorizedUsers["local_user"] !== null ? new Set(authorizedUsers["local_user"]) :new Set([])
-        
-        //console.log(localUsersShellcast)
-        //console.log(localUsersGrant)
-        
-        //let unknownLocalUsers =  localUsersGrant.filter(user => !localUsersShellcast.includes(user))
-        let unknownLocalUsers = localUsersShellcast.intersection(localUsersGrant)
-        console.log(unknownLocalUsers)
-
-        // Si Il y a des local_user autorisés dans le service mais inexistants dans users.yml
-        if (unknownLocalUsers.size > 0){
-            // Alors prévenir l'utilisateur
-            console.warn("Warning : some users are not locally registered : " + unknownLocalUsers.toString())
-            //process.exit(1)
+        // Si grant est absent
+        if (!service.grant) {
+            return next();
         }
 
-        // Teste si il y a des utilisateurs définis dans users.yml
-        let locUsersPresent = noLocalUsers === false && users !== undefined && Object.keys(users).length !== 0
-        // Tester si l'utilisateur est un x-remote-user ou un x-group autorisé dans le service
-        let notspecialUsers = (authorizedUsers["x_remote_user"] !== undefined && !authorizedUsers["x_remote_user"].includes(userId)) && (!authorizedUsers["x_group"] !== undefined && !authorizedUsers["x_group"].includes(group))
-        //console.log(notspecialUsers)
-        //console.log(unknownLocalUsers)
-       // console.log(not)
-
-       console.log(userId)
-       console.log(group)
-
-        // Activation de l'authentification dès que grant est défini
-        if (Object.keys(authorizedUsers).length === 0 && configUsers["grant"] === null){ 
-
-            // Authentification x-remote-user et x-group 
-             if (userId !== undefined || group !== undefined){
-               console.warn("Unknown Special user")
-               return res.sendStatus(401)
-            }
-
-            // Sinon authentification basicauth
-            else if (users !== undefined && Object.keys(users).length === 0){
-                console.log("ici")
-                return basicAuthShellcast(req, res, next); 
-            }
-           
-            else{
-                console.warn("Warning : some users are not locally registered : " + unknownLocalUsers.toString() + " access locked")
-                return res.sendStatus(401)
-            }
-           
-        }
-        else if (notspecialUsers){
-
-
-            if (userId !== undefined || group !== undefined){
-               console.warn("Unknown Special user")
-               return res.sendStatus(401)
-            }
-            else if (locUsersPresent && Object.keys(authorizedUsers).length > 0){
-                return basicAuthShellcast(req, res, next); 
-
-            }
-            
-            console.log("ici")
-            //return res.sendStatus(401)
-            //return basicAuthShellcast(req, res, next); 
-        }
-        // On applique le basicauth si l'userId n'est pas contenu dans le config YML ou si le groupe n'est pas autorisé
-
-        // Si l'URL de CURL contient comme paramètre un user ou un groupe autorisé
-        // on passe à la suite sans passer par le basic auth
-        return next();
+        // Sinon erreur d'accès
+        return res.sendStatus(401)
     }
 }
 

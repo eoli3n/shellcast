@@ -36,6 +36,7 @@
 
 - name: Auth and mode
   description : "Test auth and mode"
+  url: /auth
   mode: plain
   # Configure authentication
   grant:
