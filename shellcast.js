@@ -64,29 +64,23 @@ try {
 
 function loadUsers() {
     try {
-        const usersFile = yaml.safeLoad(fs.readFileSync("users.yml", "utf8"));
-        const entries = usersFile?.users ?? [];
+        const users = yaml.safeLoad(fs.readFileSync("users.yml", "utf8"));
 
-        if (!Array.isArray(entries)) {
-            throw new Error("users must be an array");
+        if (!users || typeof users !== "object" || Array.isArray(users)) {
+            throw new Error("users.yml must contain an object");
         }
 
-        const users = {};
-
-        for (const { user, password } of entries) {
-            if (typeof user !== "string" || typeof password !== "string") {
-                throw new Error("Invalid user entry in users.yml");
+        for (const [username, passwordHash] of Object.entries(users)) {
+            if (typeof username !== "string" || typeof passwordHash !== "string") {
+                throw new Error(`Invalid user entry: ${username}`);
             }
-
-            users[user] = password;
         }
 
         return users;
 
     } catch (error) {
         if (error.code === "ENOENT") {
-            // DEBUG
-            //console.log("No users.yml found, local authentication disabled.");
+            console.log("No users.yml found, local authentication disabled.");
             return {};
         }
 
@@ -99,14 +93,16 @@ const users = loadUsers();
 // DEBUG
 //console.log(users);
 
-function checkUser(username, password) {
-    const storedPassword = users[username];
+const bcrypt = require("bcrypt");
 
-    if (typeof storedPassword !== "string") {
+function checkUser(username, password) {
+    const storedHash = users[username];
+
+    if (typeof storedHash !== "string") {
         return false;
     }
 
-    return basicAuth.safeCompare(password, storedPassword);
+    return bcrypt.compareSync(password, storedHash);
 }
 
 const forbiddenChars = ['>', '<', '|', '&', ';', '(', ')', '\\', '!', '*', '$', '=', '+', '~', '"', ' '];

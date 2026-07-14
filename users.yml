@@ -1,5 +1,4 @@
-users:
-  - user: user1
-    password: password1
-  - user: user2
-    password: password2
+--- 
+# To generate hash password, use 
+user1: $2b$10$o0ftGxck933YDzXLKqnREOTMsiVfkyCn3m8ip3MvxTO.u.WKwaPBa # "password1"
+user2: $2b$10$ldRNm7nC9k6J1GY/sm/nuOjytcw3PbtNAzsbJSdWKbZyy7l0AONRO # "password2"

@@ -9,6 +9,7 @@
   "author": "eoli3n",
   "license": "WTFPL",
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "consolidate": "^0.15.0",
     "engine.io": "^6.6.2",
     "express": "^4.22.2",
