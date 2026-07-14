@@ -28,20 +28,29 @@ app.set('view engine', 'html');
 app.set('views', __dirname + '/views/');
 app.use(subdir, express.static(path.join(__dirname, '/public')));
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
-app.use(morgan('combined'));
 
 // Configure morgan logs
+morgan.token("auth", (req) => {
+    return req.authlog || "-";
+});
+morgan.token('status-text', (req, res) => {
+    const status = res.statusCode;
 
-// TODO add fallback basic auth user
-//morgan.token("user", (req) => req.headers["x-remote-user"] || basic_auth_user || "-");
-// in logs : 127.0.0.1 - x_remote_user=krj9340a
-// in logs : 127.0.0.1 - x_group=di
-// in logs : 127.0.0.1 - local_user=toto
+    const messages = {
+        200: 'OK',
+        201: 'Created',
+        204: 'No Content',
+        400: 'Bad Request',
+        401: 'Unauthorized',
+        403: 'Forbidden',
+        404: 'Not Found',
+        500: 'Internal Server Error'
+    };
 
-morgan.token("user", (req) => { return req.headers["x-remote-user"] || "-"});
-morgan.token("group", (req) => { return req.headers["x-group"] || "-"});
+    return messages[status] || 'Unknown';
+});
 
-app.use(morgan(':remote-addr - :user :group [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length]'));
+app.use(morgan(':remote-addr - :auth [:date[clf]] ":method :url HTTP/:http-version" :status :status-text :response-time ms'));
 
 // Load YAML config
 let config;
@@ -331,6 +340,7 @@ function authIfNeeded(service) {
             Array.isArray(service.grant.x_remote_user) &&
             service.grant.x_remote_user.includes(remoteUser)
         ) {
+            req.authlog = "x_remote_user=" + remoteUser;
             return next();
         }
 
@@ -342,6 +352,7 @@ function authIfNeeded(service) {
             Array.isArray(service.grant.x_group) &&
             service.grant.x_group.includes(group)
         ) {
+            req.authlog = "x_group=" + group;
             return next();
         }
 
@@ -353,6 +364,7 @@ function authIfNeeded(service) {
             Array.isArray(service.grant.password) &&
             service.grant.password.includes(password)
         ) {
+            req.authlog = "password=" + password;
             return next();
         }
 
@@ -361,6 +373,8 @@ function authIfNeeded(service) {
 
             // Si utilisateur authentifié
             return basicAuthShellcast(req, res, () => {
+
+                req.authlog = "local_user=" + req.auth.user;
 
                 // Si utilisateur authentifié autorisé sur le service
                 if (service.grant.local_user.includes(req.auth.user)) {
