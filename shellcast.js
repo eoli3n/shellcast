@@ -30,18 +30,25 @@ app.use(subdir, express.static(path.join(__dirname, '/public')));
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 
 // Configure morgan logs
-morgan.token("query", (req) => {
-    const remoteUser = req.headers["x-remote-user"];
-    const group = req.headers["x-group"];
-    if (remoteUser || group) {
-        return `${remoteUser || "-"}:${group || "-"}`;
+morgan.token("auth", (req) => {
+
+    const presented = [...(req.authPresented || [])];
+
+    if (req.auth?.user && !presented.some(x => x.startsWith("local_user="))) {
+        presented.push(`local_user=${req.auth.user}`);
     }
 
-    return "-";
+    if (presented.length === 0) {
+        return "-";
+    }
+
+    if (req.authenticatedWith) {
+        return `presented(${presented.join(",")}) authenticated with ${req.authenticatedWith}`;
+    }
+
+    return `presented(${presented.join(",")})`;
 });
-morgan.token("auth", (req) => {
-    return req.authlog || "-";
-});
+
 morgan.token('status-text', (req, res) => {
     const status = res.statusCode;
 
@@ -60,7 +67,7 @@ morgan.token('status-text', (req, res) => {
     return messages[status] || 'Unknown';
 });
 
-app.use(morgan(':remote-addr - :query :auth [:date[clf]] ":method :url HTTP/:http-version" :status :status-text :response-time ms'));
+app.use(morgan(':remote-addr - [:date[clf]] ":method :url HTTP/:http-version" :status :status-text :auth :response-time ms'));
 
 // Load YAML config
 let config;
@@ -333,50 +340,69 @@ const basicAuthShellcast = basicAuth({
 function authIfNeeded(service) {
     return (req, res, next) =>{
 
+        // Init authPresented
+        req.authPresented = [];
+
         // Si grant est absent du service
         if (!service.grant) {
             return next();
         }
 
-        // Si x-remote-user est autorisé
+        // Si x-remote-user existe
         const remoteUser = req.headers["x-remote-user"];
+        if (remoteUser) {
 
-        if (
-            remoteUser &&
-            Array.isArray(service.grant.x_remote_user) &&
-            service.grant.x_remote_user.includes(remoteUser)
-        ) {
-            req.authlog = "x_remote_user=" + remoteUser;
-            return next();
-        }
+            // Ajouter dans les logs la tentative
+            req.authPresented.push(`x_remote_user=${remoteUser}`);
+        
+            // Si la tentative est valide
+            if (
+                Array.isArray(service.grant.x_remote_user) &&
+                service.grant.x_remote_user.includes(remoteUser)
+            ) {
+                req.authenticatedWith = "x_remote_user";
+                return next();
+            }
+        }        
 
-        // Si x-group est autorisé
+        // Si x-group existe
         const group = req.headers["x-group"];
+        if (group) {
 
-        if (
-            group &&
-            Array.isArray(service.grant.x_group) &&
-            service.grant.x_group.includes(group)
-        ) {
-            req.authlog = "x_group=" + group;
-            return next();
+            // Ajouter dans les logs la tentative
+            req.authPresented.push(`x_group=${group}`);
+        
+            // Si la tentative est valide
+            if (
+                Array.isArray(service.grant.x_group) &&
+                service.grant.x_group.includes(group)
+            ) {
+                req.authenticatedWith = "x_group";
+                return next();
+            }
         }
 
-        // Si password est autorisé
+        // Si password existe
         const password = req.query.password;
-
         if (
             typeof password === "string" &&
             Array.isArray(service.grant.password)
         ) {
+            let found = false;
+        
             for (const entry of service.grant.password) {
-
                 const [tag, hash] = Object.entries(entry)[0];
-
+        
                 if (bcrypt.compareSync(password, hash)) {
-                    req.authlog = "password=" + tag;
+                    req.authPresented.push(`password=${tag}`);
+                    req.authenticatedWith = "password";
+                    found = true;
                     return next();
                 }
+            }
+        
+            if (!found) {
+                req.authPresented.push("password=invalid");
             }
         }
 
@@ -386,7 +412,7 @@ function authIfNeeded(service) {
             // Si utilisateur authentifié
             return basicAuthShellcast(req, res, () => {
 
-                req.authlog = "local_user=" + req.auth.user;
+                req.authenticatedWith = "local_user";
 
                 // Si utilisateur authentifié autorisé sur le service
                 if (service.grant.local_user.includes(req.auth.user)) {

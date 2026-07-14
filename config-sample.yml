@@ -23,8 +23,6 @@
 - name: Args
   description: "Test args, suburls, password and plain text"
   url: /args/test
-  # Set a password to query url as "?password=suburlpass"
-  password: suburlpass
   # Whitelist some specific chars for that service
   whitelist: ["(", ")", " "]
   # curl -Gs --data-urlencode "hostname=( f o o )" "http://localhost:3000/shellcast/args/test/plain?mac=00:11:22:33:44:55&password=suburlpass"

@@ -17,7 +17,7 @@ pause() {
 }
 
 title "Test without authentication"
-run curl -i "http://localhost:3000/shellcast/args/test/plain?hostname=foo&ip=10.0.0.1&mac=00:11:22:33:44:55&password=suburlpass"
+run curl -i "http://localhost:3000/shellcast/args/test/plain?hostname=foo&ip=10.0.0.1&mac=00:11:22:33:44:55"
 
 pause
 
@@ -79,6 +79,24 @@ pause
 
 title "Test with NOT authorized user basicauth authentication"
 run curl -i -u user2:password2 "http://localhost:3000/shellcast/auth/plain"
+echo ""
+
+pause
+
+title "Test with multiple valid authentications"
+run curl -i -u user1:password1 -H "X-Remote-User: remote_user1" -H "X-Group: group1" 'http://localhost:3000/shellcast/auth/plain?password=pa$$w0rd1'
+echo ""
+
+pause
+
+title "Test with multiple NOT valid authentications"
+run curl -i -u userx:notvalidpassword -H "X-Remote-User: remote_userx" -H "X-Group: groupx" 'http://localhost:3000/shellcast/auth/plain?password=invalidpassword'
+echo ""
+
+pause
+
+title "Test with multiple NOT valid authentications except local_user is valid"
+run curl -i -u user1:password1 -H "X-Remote-User: remote_userx" -H "X-Group: groupx" 'http://localhost:3000/shellcast/auth/plain?password=invalidpassword'
 echo ""
 
 pause
