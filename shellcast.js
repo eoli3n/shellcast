@@ -330,6 +330,7 @@ function authIfNeeded(service) {
         if (
             remoteUser &&
             Array.isArray(service.grant.x_remote_user) &&
+            service.grant.x_remote_user !== undefined &&
             service.grant.x_remote_user.includes(remoteUser)
         ) {
             return next();
@@ -341,7 +342,19 @@ function authIfNeeded(service) {
         if (
             group &&
             Array.isArray(service.grant.x_group) &&
+            service.grant.x_group !== undefined &&
             service.grant.x_group.includes(group)
+        ) {
+            return next();
+        }
+
+        // Si password est autorisé
+        const password = req.query.password;
+
+        if (
+            typeof password === "string" &&
+            service.grant.password !== undefined &&
+            service.grant.password.includes(password)
         ) {
             return next();
         }
@@ -356,10 +369,6 @@ config.forEach((cast) => {
     cast.url = subdir + cast.url.replace(/\/$/, '');
     
     app.get(cast.url, authIfNeeded(cast), (req, res) => {       
-        // Gère si le mdp du service shellcast est le même que celui passé dans les headers de l'url
-        if (cast.password && cast.password !== req.query.password) {
-            return res.status(403).send('Missing or wrong password...');
-        }
         // Renvoie la liste des paramètres incorrect au sein du service lancé et renvoie une erreur 400 côté client si la liste en contient au moins une 
         const errors = validateParams(cast.args || [], req, res, cast);
         if (errors.length > 0) {

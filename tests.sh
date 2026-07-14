@@ -15,3 +15,8 @@ curl -H "X-Group: group1" -s "http://localhost:3000/shellcast/auth/plain"
 echo -e "\n=> Test with NOT valid x-group authentication"
 curl -H "X-Group: groupx" -s "http://localhost:3000/shellcast/auth/plain"
 echo ""
+echo -e "\n=> Test with valid password authentication"
+curl -s 'http://localhost:3000/shellcast/auth/plain?password=pa$$w0rd1'
+echo -e "\n=> Test with NOT valid password authentication"
+curl -s 'http://localhost:3000/shellcast/auth/plain?password=notvalidpa$$w0rd'
+echo ""
