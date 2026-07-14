@@ -50,7 +50,8 @@
     x_group:
       - group1
       - group2
+    # To generate hash password, use ./generate-password-hash.sh 'pa$$w0rd1'
     password:
-      - pa$$w0rd1
-      - pa$$w0rd2
+      - tag1: "$2b$10$6Fworo8.aY8E2G7qbx/JFOsc3XNAcDpDQ9NY8t5jZH1zthTdKCS.y" # pa$$w0rd1
+      - tag2: "$2b$10$Z1GOW3DmYWM2Sx9IpxoaDurEZBX2mhABhJFfUbWXsaaytIs5k5AQe" # pa$$w0rd2
   cmd: echo "Authentication succedded with mode plain !"

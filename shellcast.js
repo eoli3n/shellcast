@@ -357,11 +357,17 @@ function authIfNeeded(service) {
 
         if (
             typeof password === "string" &&
-            Array.isArray(service.grant.password) &&
-            service.grant.password.includes(password)
+            Array.isArray(service.grant.password)
         ) {
-            req.authlog = "password=" + password;
-            return next();
+            for (const entry of service.grant.password) {
+
+                const [tag, hash] = Object.entries(entry)[0];
+
+                if (bcrypt.compareSync(password, hash)) {
+                    req.authlog = "password=" + tag;
+                    return next();
+                }
+            }
         }
 
         // Si basic_auth activé via grant.local_user
