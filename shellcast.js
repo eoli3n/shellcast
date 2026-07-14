@@ -82,7 +82,7 @@ app.use(morgan('[HTTP #:id] :remote-addr - [:date[clf]] ":method :url HTTP/:http
 let config;
 
 try {
-    config = yaml.safeLoad(fs.readFileSync(process.argv[2], 'utf8'));
+    config = yaml.load(fs.readFileSync(process.argv[2], 'utf8'));
 } catch (error) {
     console.error('Error loading YAML config:', error);
     process.exit(1);
@@ -90,7 +90,7 @@ try {
 
 function loadUsers() {
     try {
-        const users = yaml.safeLoad(fs.readFileSync("users.yml", "utf8"));
+        const users = yaml.load(fs.readFileSync("users.yml", "utf8"));
 
         if (!users || typeof users !== "object" || Array.isArray(users)) {
             throw new Error("users.yml must contain an object");
