@@ -335,6 +335,17 @@ function authIfNeeded(service) {
             return next();
         }
 
+        // Si x-group est autorisé
+        const group = req.headers["x-group"];
+
+        if (
+            group &&
+            Array.isArray(service.grant.x_group) &&
+            service.grant.x_group.includes(group)
+        ) {
+            return next();
+        }
+
         // Sinon erreur d'accès
         return res.sendStatus(401);
     }

@@ -10,3 +10,8 @@ curl -H "X-Remote-User: remote_user1" -s "http://localhost:3000/shellcast/auth/p
 echo -e "\n=> Test with NOT valid x-remote-user authentication"
 curl -H "X-Remote-User: remote_userx" -s "http://localhost:3000/shellcast/auth/plain"
 echo ""
+echo -e "\n=> Test with valid x-group authentication"
+curl -H "X-Group: group1" -s "http://localhost:3000/shellcast/auth/plain"
+echo -e "\n=> Test with NOT valid x-group authentication"
+curl -H "X-Group: groupx" -s "http://localhost:3000/shellcast/auth/plain"
+echo ""
