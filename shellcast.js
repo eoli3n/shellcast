@@ -17,7 +17,8 @@ const express = require('express'),
       favicon = require('serve-favicon'),
       validator = require('validator'),
       basicAuth = require('express-basic-auth'),
-      { exec } = require('child_process');
+      { exec } = require('child_process'),
+      bcrypt = require("bcrypt");
 
 // Set trust proxy before adding any middleware or routes
 app.set('trust proxy', true);
@@ -29,7 +30,15 @@ app.set('views', __dirname + '/views/');
 app.use(subdir, express.static(path.join(__dirname, '/public')));
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 
+// Initialiser le compteur de requêtes
+let requestId = 0;
+app.use((req, res, next) => {
+    req.requestId = ++requestId;
+    next();
+});
+
 // Configure morgan logs
+morgan.token("id", req => req.requestId);
 morgan.token("auth", (req) => {
 
     const presented = [...(req.authPresented || [])];
@@ -67,9 +76,9 @@ morgan.token('status-text', (req, res) => {
     return messages[status] || 'Unknown';
 });
 
-app.use(morgan(':remote-addr - [:date[clf]] ":method :url HTTP/:http-version" :status :status-text :auth :response-time ms'));
+app.use(morgan('[HTTP #:id] :remote-addr - [:date[clf]] ":method :url HTTP/:http-version" :status :status-text :auth :response-time ms'));
 
-// Load YAML config
+// Load YAML configurations
 let config;
 
 try {
@@ -110,7 +119,34 @@ const users = loadUsers();
 // DEBUG
 //console.log(users);
 
-const bcrypt = require("bcrypt");
+
+function formatDuration(startTime) {
+
+    const duration = Date.now() - startTime;
+
+    if (duration < 1000) {
+        return `${duration}ms`;
+    }
+
+    const totalSeconds = Math.floor(duration / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    let result = "";
+
+    if (hours > 0) {
+        result += `${hours}h `;
+    }
+
+    if (minutes > 0) {
+        result += `${minutes}m `;
+    }
+
+    result += `${seconds}s`;
+
+    return result.trim();
+}
 
 function checkUser(username, password) {
     const storedHash = users[username];
@@ -180,14 +216,19 @@ io.sockets.on('connection', (socket) => {
     
     //console.log(`Client ${clientId} connected.`);
 
-    socket.on('init', (url) => {
+    socket.on('init', (data) => {
+
+        const url = data.url;
+        const requestId = data.requestId;
+
         let castArgs = [];
         let cmd = '';
         let castHighlightJson = [];
-              
         
         // Find the cast corresponding to the URL
-        const cast = config.find(c => c.url.replace(/\/$/, '') === url[0].replace(/\/$/, ''));
+        const cast = config.find(c =>
+            c.url.replace(/\/$/, '') === url.replace(/\/$/, '')
+        );
         
         if (cast) {
             cmd = cast.cmd;
@@ -260,27 +301,7 @@ io.sockets.on('connection', (socket) => {
 
             run.on('close', (code) => {
 
-                const endTime = Date.now();
-                const executionTimeInSeconds = (endTime - startTime) / 1000;
-                const hours = Math.floor(executionTimeInSeconds / 3600);
-                const minutes = Math.floor((executionTimeInSeconds % 3600) / 60);
-                const seconds = Math.floor(executionTimeInSeconds % 60);
-                const milliseconds = Math.round((executionTimeInSeconds % 1) * 1000);
-
-                let executionTime = '';
-
-                if (hours > 0) {
-                    executionTime += `${hours}h `;
-                }
-                if (minutes > 0) {
-                    executionTime += `${minutes}m `;
-                }
-
-                if (executionTimeInSeconds < 1) {
-                    executionTime += `${milliseconds}ms`;
-                } else {
-                    executionTime += `${seconds}s`;
-                }
+                const executionTime = formatDuration(startTime);
 
                 let ANSI_COLOR_RED = '\x1b[38;5;9m';  // Rouge
                 let ANSI_COLOR_GREEN = '\x1b[38;5;10m'; // Vert
@@ -288,7 +309,7 @@ io.sockets.on('connection', (socket) => {
                 let ANSI_GRAY_ITALIC = '\x1b[38;5;8m\x1b[3m'; // Gris italique
                 let ANSI_WHITE_ITALIC = '\x1b[97m\x1b[3m'; // Blanc italique
                 let icon = (code !== 0) ? `${ANSI_COLOR_RED}✘${ANSI_RESET}` : `${ANSI_COLOR_GREEN}✔${ANSI_RESET}`;
-                let line = `${icon} ${ANSI_WHITE_ITALIC}Command exited with code ${code} in ${executionTime}.${ANSI_RESET}`;
+                let line = `${icon} ${ANSI_WHITE_ITALIC}Command #${requestId} exited with code ${code} in ${executionTime}.${ANSI_RESET}`;
                 if (!socket.focus) {
                     //console.log(`Buffering stderr line for ${clientId}:`, line);
                     clientBuffers.get(clientId).push(line);
@@ -296,7 +317,7 @@ io.sockets.on('connection', (socket) => {
                     //console.log(`Sending stderr line to ${clientId}:`, line);
                     socket.emit('line', line);
                 }
-                console.log(`Command ${cmd} exited with code ${code}`);
+                console.log(`[EXEC #${requestId}] ${cmd} -> exit=${code} duration=${executionTime}`);
             });
 
             socket.on('disconnect', () => {
@@ -442,7 +463,7 @@ config.forEach((cast) => {
             }
             // Charge la page html où sera affiché les résultats de la commande
             res.setHeader('Content-Type', 'text/html');
-            res.render('index', { title: cast.name, subdir: subdir });
+            res.render('index', { title: cast.name, subdir: subdir, requestId: req.requestId });
         });
     }
 
@@ -476,6 +497,7 @@ config.forEach((cast) => {
             }
             // Permet d'exécuter des commandes produisant beaucoup de données
             // et d'intéragir avec les sorties std
+            const startTime = Date.now();
             const run = spawn('bash', ['-c', cmd]);
             // On exécute la commande sur stdout et stderr
             run.stdout.pipe(res);
@@ -487,7 +509,8 @@ config.forEach((cast) => {
             });
             
             run.on('close', (code) => {
-                console.log(`Command ${cmd} exited with code ${code}`);
+                const executionTime = formatDuration(startTime);
+                console.log(`[EXEC #${req.requestId}] ${cmd} -> exit=${code} duration=${executionTime}`);
             });
         });
     }
