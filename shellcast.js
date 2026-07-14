@@ -30,6 +30,15 @@ app.use(subdir, express.static(path.join(__dirname, '/public')));
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 
 // Configure morgan logs
+morgan.token("query", (req) => {
+    const remoteUser = req.headers["x-remote-user"];
+    const group = req.headers["x-group"];
+    if (remoteUser || group) {
+        return `${remoteUser || "-"}:${group || "-"}`;
+    }
+
+    return "-";
+});
 morgan.token("auth", (req) => {
     return req.authlog || "-";
 });
@@ -51,7 +60,7 @@ morgan.token('status-text', (req, res) => {
     return messages[status] || 'Unknown';
 });
 
-app.use(morgan(':remote-addr - :auth [:date[clf]] ":method :url HTTP/:http-version" :status :status-text :response-time ms'));
+app.use(morgan(':remote-addr - :query :auth [:date[clf]] ":method :url HTTP/:http-version" :status :status-text :response-time ms'));
 
 // Load YAML config
 let config;
