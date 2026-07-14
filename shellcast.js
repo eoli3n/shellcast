@@ -91,7 +91,6 @@ const users = loadUsers();
 //console.log(users);
 
 function checkUser(username, password) {
-    console.log("basic auth attempt:", username);
     const storedPassword = users[username];
 
     if (typeof storedPassword !== "string") {
