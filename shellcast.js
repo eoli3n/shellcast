@@ -76,7 +76,7 @@ morgan.token('status-text', (req, res) => {
     return messages[status] || 'Unknown';
 });
 
-app.use(morgan('[HTTP #:id] :remote-addr - ":method :url HTTP/:http-version" :status :status-text :auth :response-time ms'));
+app.use(morgan('[HTTP #:id] :remote-addr - ":method :url HTTP/:http-version :user-agent" :status :status-text :auth :response-time ms'));
 
 // Load YAML configurations
 let config;
