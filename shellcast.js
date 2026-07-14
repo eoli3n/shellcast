@@ -91,21 +91,14 @@ const users = loadUsers();
 //console.log(users);
 
 function checkUser(username, password) {
-    let usersFile
-    let userGroup
+    console.log("basic auth attempt:", username);
+    const storedPassword = users[username];
 
-    let userNameCheck = Object.keys(users).includes(username) ? username : 0
-    let passwordCheck = users[username] !== undefined ? users[username] : 0
-
-    try {
-        const userMatches = basicAuth.safeCompare(username, userNameCheck)
-        const passwordMatches = basicAuth.safeCompare(password, passwordCheck, 'custompassword')
-
-        return userMatches & passwordMatches
+    if (typeof storedPassword !== "string") {
+        return false;
     }
-    catch(error){
-        console.log("incorrect logins parameter")
-    }
+
+    return basicAuth.safeCompare(password, storedPassword);
 }
 
 const forbiddenChars = ['>', '<', '|', '&', ';', '(', ')', '\\', '!', '*', '$', '=', '+', '~', '"', ' '];
@@ -313,13 +306,20 @@ io.sockets.on('connection', (socket) => {
 });
 
 // BasicAuth permettant aux utilisateurs locaux de se connecter
-const basicAuthShellcast = basicAuth({users : users, authorizer : checkUser, challenge : true,  realm: 'shellcast'})
+const basicAuthShellcast = basicAuth({
+    authorizer: checkUser,
+    challenge: true,
+    unauthorizedResponse: () => {
+        return "Unauthorized";
+    },
+    realm: "shellcast"
+});
 
-// Middleware permettant d'appliquer ou non le middleware sous certaines conditions et prenant en paramètre les données sotckées dans la variable cast
+// Middleware d'authentification
 function authIfNeeded(service) {
     return (req, res, next) =>{
 
-        // Si grant est absent
+        // Si grant est absent du service
         if (!service.grant) {
             return next();
         }
@@ -330,7 +330,6 @@ function authIfNeeded(service) {
         if (
             remoteUser &&
             Array.isArray(service.grant.x_remote_user) &&
-            service.grant.x_remote_user !== undefined &&
             service.grant.x_remote_user.includes(remoteUser)
         ) {
             return next();
@@ -342,7 +341,6 @@ function authIfNeeded(service) {
         if (
             group &&
             Array.isArray(service.grant.x_group) &&
-            service.grant.x_group !== undefined &&
             service.grant.x_group.includes(group)
         ) {
             return next();
@@ -353,10 +351,25 @@ function authIfNeeded(service) {
 
         if (
             typeof password === "string" &&
-            service.grant.password !== undefined &&
+            Array.isArray(service.grant.password) &&
             service.grant.password.includes(password)
         ) {
             return next();
+        }
+
+        // Si basic_auth activé via grant.local_user
+        if (service.grant.local_user !== undefined) {
+
+            // Si utilisateur authentifié
+            return basicAuthShellcast(req, res, () => {
+
+                // Si utilisateur authentifié autorisé sur le service
+                if (service.grant.local_user.includes(req.auth.user)) {
+                    return next();
+                }
+
+                return res.sendStatus(403);
+            });
         }
 
         // Sinon erreur d'accès
@@ -381,11 +394,6 @@ config.forEach((cast) => {
 
     app.get(cast.url + '/plain' ,authIfNeeded(cast) ,(req, res) => {
         res.setHeader('Content-Type', 'text/plain');
-        // TODO basic auth
-        // Gère si le mdp du service shellcast est le même que celui passé dans les headers de l'url
-        if (cast.password && cast.password !== req.query.password) {
-            return res.status(403).send('Incorrect or missing password...');
-        }
         // Renvoie la liste des paramètres incorrect et renvoie une erreur 400 côté client si la liste en contient au moins une 
         const errors = validateParams(cast.args || [], req, res, cast);
         if (errors.length > 0) {

@@ -43,7 +43,6 @@
     # This activates basic auth on the service, users are defined in users.yml
     local_user:
       - user1
-      - user2
     # This needs extra configuration with external authenticator, see README.md
     x_remote_user:
       - remote_user1
