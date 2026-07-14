@@ -53,53 +53,49 @@ try {
     process.exit(1);
 }
 
+function loadUsers() {
+    try {
+        const usersFile = yaml.safeLoad(fs.readFileSync("users.yml", "utf8"));
+        const entries = usersFile?.users ?? [];
 
-let noLocalUsers = false 
-let usersShellcast;
+        if (!Array.isArray(entries)) {
+            throw new Error("users must be an array");
+        }
 
+        const users = {};
 
-try {
-    let usersFile = yaml.safeLoad(fs.readFileSync("users.yml", 'utf8'))
-    let users = usersFile["users"] !== undefined && usersFile["users"] !== null ?  usersFile["users"] :  []
+        for (const { user, password } of entries) {
+            if (typeof user !== "string" || typeof password !== "string") {
+                throw new Error("Invalid user entry in users.yml");
+            }
 
-    // Mise en format des utilisateurs pour le basic auth d'express
-    let formatedUsers = {};
+            users[user] = password;
+        }
 
-    for (user in users) {
-        let key = users[user]["user"];
-        let value = users[user]["password"];
+        return users;
 
-        formatedUsers[key] = value;
-    }
+    } catch (error) {
+        if (error.code === "ENOENT") {
+            // DEBUG
+            //console.log("No users.yml found, local authentication disabled.");
+            return {};
+        }
 
-    usersShellcast = formatedUsers;
-}
-catch (error) {
-   // console.error("Error : UserFile badly formated");
-    if (error.code !== "ENOENT"){
-        console.error("An error made the user.yml file unusable")
+        console.error("Unable to load users.yml:", error.message);
         process.exit(1);
     }
-    console.log("No user file")
-    noLocalUsers = true
-
-    //process.exit(1);
 }
 
-function getUserAndGroups(url){
-    app.get(url, (req, res) => {
-        // 1. Récupérer tous les headers
-        const tousLesHeaders = req.headers;
-        console.log(tousLesHeaders);
-    });
-}
+const users = loadUsers();
+// DEBUG
+//console.log(users);
 
 function checkUser(username, password) {
     let usersFile
     let userGroup
 
-    let userNameCheck = Object.keys(usersShellcast).includes(username) ? username : 0
-    let passwordCheck = usersShellcast[username] !== undefined ? usersShellcast[username] : 0
+    let userNameCheck = Object.keys(users).includes(username) ? username : 0
+    let passwordCheck = users[username] !== undefined ? users[username] : 0
 
     try {
         const userMatches = basicAuth.safeCompare(username, userNameCheck)
@@ -317,7 +313,7 @@ io.sockets.on('connection', (socket) => {
 });
 
 // BasicAuth permettant aux utilisateurs locaux de se connecter
-const basicAuthShellcast = basicAuth({users : usersShellcast, authorizer : checkUser, challenge : true,  realm: 'shellcast'})
+const basicAuthShellcast = basicAuth({users : users, authorizer : checkUser, challenge : true,  realm: 'shellcast'})
 
 // Middleware permettant d'appliquer ou non le middleware sous certaines conditions et prenant en paramètre les données sotckées dans la variable cast
 function authIfNeeded(castData) {
@@ -333,10 +329,10 @@ function authIfNeeded(castData) {
         let authorizedUsers = Object.keys(configUsers).includes("grant") && configUsers["grant"] !== null ? configUsers["grant"] : {};
 
 
-        //console.log(usersShellcast)
+        //console.log(users)
        // console.log(authorizedUsers)
 
-        let localUsersShellcast = usersShellcast !== undefined && Object.keys(usersShellcast).length > 0 ? new Set(Object.keys(usersShellcast)) : new Set([])
+        let localUsersShellcast = users !== undefined && Object.keys(users).length > 0 ? new Set(Object.keys(users)) : new Set([])
         let localUsersGrant =  authorizedUsers["local_user"] !== undefined &&  authorizedUsers["local_user"] !== null ? new Set(authorizedUsers["local_user"]) :new Set([])
         
         //console.log(localUsersShellcast)
@@ -354,7 +350,7 @@ function authIfNeeded(castData) {
         }
 
         // Teste si il y a des utilisateurs définis dans users.yml
-        let locUsersPresent = noLocalUsers === false && usersShellcast !== undefined && Object.keys(usersShellcast).length !== 0
+        let locUsersPresent = noLocalUsers === false && users !== undefined && Object.keys(users).length !== 0
         // Tester si l'utilisateur est un x-remote-user ou un x-group autorisé dans le service
         let notspecialUsers = (authorizedUsers["x_remote_user"] !== undefined && !authorizedUsers["x_remote_user"].includes(userId)) && (!authorizedUsers["x_group"] !== undefined && !authorizedUsers["x_group"].includes(group))
         //console.log(notspecialUsers)
@@ -374,7 +370,7 @@ function authIfNeeded(castData) {
             }
 
             // Sinon authentification basicauth
-            else if (usersShellcast !== undefined && Object.keys(usersShellcast).length === 0){
+            else if (users !== undefined && Object.keys(users).length === 0){
                 console.log("ici")
                 return basicAuthShellcast(req, res, next); 
             }
