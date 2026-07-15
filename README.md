@@ -104,7 +104,9 @@ Create check_auth.php in your app to get CAS session
 
 session_start();
 if (!isset($_SESSION['phpCAS']['user'])) {
-    http_response_code(401);
+    header("X-Remote-User: unknown");
+    header("X-Group: unknown");
+    http_response_code(200);
     exit;
 }
 $user = $_SESSION['phpCAS']['user'];
@@ -131,6 +133,7 @@ Configure a route for /plain service which excludes auth_request
 ```
   location ~ ^/shellcast/.*/plain$ {
     add_header Access-Control-Allow-Origin *;
+    proxy_set_header Authorization $http_authorization;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
@@ -151,6 +154,7 @@ Configure shellcast location to get user and group from check_auth
     auth_request /_check_auth;
     auth_request_set $app_user  $upstream_http_x_remote_user;
     auth_request_set $app_group $upstream_http_x_group;
+    proxy_set_header Authorization $http_authorization;
     proxy_set_header X-Remote-User $app_user;
     proxy_set_header X-Group $app_group;
     proxy_set_header X-Real-IP $remote_addr;
