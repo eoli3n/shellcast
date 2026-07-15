@@ -458,6 +458,9 @@ function authIfNeeded(service) {
 config.forEach((cast) => {
     cast.url = subdir + cast.url.replace(/\/$/, '');
     
+    // Log config file
+    console.log(cast);
+
     // Si mode web ou non défini, activer cette route
     if (cast.mode === undefined || cast.mode === "web") {
         app.get(cast.url, authIfNeeded(cast), (req, res) => {       
