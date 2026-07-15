@@ -104,8 +104,6 @@ Create check_auth.php in your app to get CAS session
 
 session_start();
 if (!isset($_SESSION['phpCAS']['user'])) {
-    header("X-Remote-User: unknown");
-    header("X-Group: unknown");
     http_response_code(200);
     exit;
 }
