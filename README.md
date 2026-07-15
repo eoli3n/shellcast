@@ -47,6 +47,7 @@ git clone https://github.com/eoli3n/shellcast
 cd shellcast
 npm install
 cp config-sample.yml config.yml
+cp users-sample.yml users.yml
 ```
 ## Run
 ```
